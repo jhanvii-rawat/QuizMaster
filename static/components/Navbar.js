@@ -1,36 +1,30 @@
-// import { state, logout } from "../utils/state.js";
-import router from "../utils/router.js";
-
 const Navbar = {
   template: `
-    <nav class="h3 w-auto d-flex justify-content-between">
-      <router-link to="/">Home</router-link>
-      <router-link v-if="!state.loggedIn" to="/login">Login</router-link>
-      <router-link v-if="!state.loggedIn" to="/signup">Signup</router-link>
-      <router-link v-if="state.loggedIn && state.role === 'admin'" to="/admin-dashboard">Dashboard</router-link>
-      <router-link v-if="state.loggedIn && state.role === 'user'" to="/user-dashboard">Dashboard</router-link>
-      
-      <router-link v-if="state.loggedIn" to="/profile">Profile</router-link>
-      <button class="btn btn-warning text-xl" v-if="state.loggedIn" @click="logout">Logout</button>
-      </nav>
-  `,
-
-  methods: {
-    logout() {
-      // clear session
-      sessionStorage.clear();
-
-      // clear vuex login info
-      this.$store.commit("logout");
-      this.$store.commit("setRole", null);
-
-      this.$router.push("/");
-    },
-  },
-  computed: {
-    state() {
-      return this.$store.state;
-    },
+          <nav class="navbar navbar-light bg-light justify-content" style="background-color: #D4BEB0;">
+         
+            <div class="container-end-left">
+            <a><router-link to='/'><img src="https://fontmeme.com/permalink/250116/dfec6aefe26ba26480695e5bad0aa18a.png" alt="pixel-fonts" border="0"></router-link></a>
+            </div>
+          <form class="form-inline">
+              Already a User?
+              <router-link to="/login" class="mr-3 ml-1"> <button class="btn btn-sm btn-outline-dark"  type="button">Login</button></router-link>  
+              
+              New to Quiz Master?
+              <router-link to="/signup" class="mr-3 ml-1"> <button class="btn btn-sm btn-outline-dark" type="button">Sign Up</button></router-link>
+              
+            <div class="container-end-left">
+            <a :href="logoutURL"><button class="btn btn-sm btn-outline-dark"  type="button"> logout</button></a>
+            </div>
+              
+              </form>
+        </div>
+                  
+                </nav>
+    `,
+  data() {
+    return {
+      logoutURL: window.location.origin + "/logout",
+    };
   },
 };
 

@@ -4,6 +4,7 @@ from extentions import db, security
 from initial_data import create_data
 from dotenv import load_dotenv
 import os
+import resources
 
 
 
@@ -44,8 +45,12 @@ def create_app():
             
         create_data(user_datastore)
 
-   
-    views.create_view(app)
+    app.config["WTF_CSRF_CHECK_DEFAULT"] = False
+    app.config['SECURITY_CSRF_PROTECT_MECHANISMS'] = []
+    app.config['SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS'] = True
+    views.create_view(app, user_datastore,db)
+
+    resources.api.init_app(app)
 
     return app
 
