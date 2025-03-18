@@ -19,6 +19,7 @@ def create_view(app : Flask, user_datastore : SQLAlchemySessionUserDatastore, db
         password = data.get('password')
         name = data.get('name')
         role = 'user'  # Default role for all new signups
+        
 
         if not email or not password or not name:
             return jsonify({"message": "Invalid inputs"}), 404

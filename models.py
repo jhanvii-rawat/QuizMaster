@@ -1,6 +1,7 @@
 from extentions import db, security
 from flask_security import UserMixin, RoleMixin
 from flask_security.models import fsqla_v3 as fsq
+from datetime import time, datetime
 
 # Initialize database
 fsq.FsModels.set_db_info(db)
@@ -11,7 +12,8 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String, nullable=False, unique=True)
     password = db.Column(db.String, nullable=False)
     name = db.Column(db.String(80), nullable=False)
-    active = db.Column(db.Boolean)
+    active=db.Column(db.Boolean)
+    date_created = db.Column(db.DateTime, default=datetime.now)
     fs_uniquifier = db.Column(db.String(), nullable=False)
     roles = db.relationship('Role', secondary='user_roles')
 
@@ -30,25 +32,25 @@ class UserRoles(db.Model):
 # Subject model
 class Subject(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False, unique=True)
-    description = db.Column(db.String(255))
+    name = db.Column(db.String(80), nullable=False, unique=True)
+    description = db.Column(db.String(80))
     chapters = db.relationship('Chapter', backref='subject', lazy=True)
 
 # Chapter model
 class Chapter(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.String(255))
+    description = db.Column(db.String(100))
     subject_id = db.Column(db.Integer, db.ForeignKey('subject.id'), nullable=False)
     quizzes = db.relationship('Quiz', backref='chapter', lazy=True)
 
-# Quiz model
+
 class Quiz(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     chapter_id = db.Column(db.Integer, db.ForeignKey('chapter.id'), nullable=False)
     date_of_quiz = db.Column(db.Date, nullable=False)
-    time_duration = db.Column(db.String(10))  # Format: hh:mm
-    remarks = db.Column(db.String(255))
+    time_duration = db.Column(db.Time, nullable=False)  
+    remarks = db.Column(db.String(100))
     questions = db.relationship('Question', backref='quiz', lazy=True)
     scores = db.relationship('Score', backref='quiz', lazy=True)
 

@@ -58,55 +58,535 @@ body {
 }
 
 
-.dashboard {
-  text-align: center;
-  margin: 20px;
+
+.close-btn {
+    cursor: pointer;
+    float: right;
+    font-size: 20px;
 }
 
-.add-btn, .submit-btn {
+/* Forms */
+input[type="text"], input[type="number"] {
+    width: 100%;
+    padding: 8px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+/* Global Styles */
+body {
+    font-family: 'Arial', sans-serif;
+    margin: 0;
+    padding: 0;
+   
+}
+
+
+h2 {
+    color: #d47b7b;
+    text-align: left;
+}
+
+
+
+
+
+.dashboard{
+  margin-left: 20px;
+  margin-right: 20px; 
+}
+
+
+
+
+
+
+
+.subjects-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+
+
+.subjects-header h2 {
+  margin-left: 20px;
+ 
+}
+
+.subjects-header button {
+  
+  margin-right: 20px; 
+}
+
+
+
+
+
+
+
+
+
+/* Table Styles */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+thead {
+    background-color: #d47b7b;
+    color: white;
+}
+
+td, th {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+tbody tr:hover {
+    background-color: #f9e6e6;
+}
+
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    width: 300px;
+}
+
+.close-btn {
+    float: right;
+    cursor: pointer;
+    font-size: 20px;
+}
+
+/* Forms */
+input, select {
+    width: 100%;
+    padding: 10px;
+    margin: 5px 0;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.submit-btn {
+    width: 100%;
+    background-color: #d47b7b;
+    color: white;
+    font-weight: bold;
+}
+
+
+
+/* Individual subject Card */
+.subject-card {
+  width: 18rem;
+  box-sizing: border-box;
+  border: 1px solid #803B3B; /* Outline around the card */
+  border-radius: 5px;
+ 
+  background: #fff;
+}
+
+/* Card Styling */
+.subject-card .card {
+  width: 100%;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease-in-out;
+  border: none; /* Remove default card border */
+}
+
+
+/* Parent container styling */
+.subject-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px; /* Adds spacing between cards */
+  justify-content: flex-start; /* Aligns new row items to the left */
+  align-items: flex-start;
+}
+
+
+.subject-card .card:hover {
+  transform: scale(1.03);
+  
+  box-shadow: 0 0 11px rgba(23, 23, 23, 0.2);
+}
+
+/* Card Body */
+.subject-card .card-body {
+  padding: 10px;
+}
+
+/* Title Styling */
+.subject-card .card-title {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+/* Description Text */
+.subject-card .card-text {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+/* Button Styling */
+.subject-card .btn-primary {
   background-color: #007bff;
   color: white;
-  border: none;
-  padding: 10px 15px;
-  cursor: pointer;
-  margin: 10px;
-  font-size: 16px;
-}
-
-ul {
-  list-style-type: none;
-  padding: 0;
-}
-
-li {
-  background: #f4f4f4;
-  margin: 5px;
-  padding: 10px;
+  padding: 8px 15px;
   border-radius: 5px;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
 }
 
-/* Modal Styling */
-.modal {
+.subject-card .btn-primary:hover {
+  background-color: #0056b3;
+}
+
+.card-button{
+
+  font-size : 13px;
+}
+
+.chapter-card {
+  width: 250px;
+  
+  
+}
+
+
+
+.chapter-card {
+  width: 18rem; /* Match the subject cards */
+  box-sizing: border-box;
+  border: 1px solid #803B3B;
+  border-radius: 5px;
+  background: #fff;
+  display: inline-block;
+  margin: 10px 5px 10px 5px;
+  
+}
+
+
+.chapter-card .card {
+  width: 100%;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease-in-out;
+  border: none; /* Remove default card border */
+}
+
+.chapter-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px; /* Adds spacing between cards */
+  justify-content: flex-start; /* Aligns new row items to the left */
+  align-items: flex-start;
+}
+
+
+.chapter-card .card:hover {
+  transform: scale(1.03);
+  
+  box-shadow: 0 0 11px rgba(23, 23, 23, 0.2);
+}
+
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+}
+
+/* Top Section Styling */
+.telly-card {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.report-card-reg {
+  flex: 1 1 100%;
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Group the small cards together */
+.telly-card-group {
+  display: flex;
+  gap: 15px;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.telly-card-card {
+  flex: 1;
+  text-align: center;
+  background: #f9f9f9;
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Report Section */
+.card-for-report {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.report-card,
+.quiz-section,
+.year-total-section {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Ensure Charts Don't Overlap */
+.chart-container {
+  width: 100%;
+  overflow: hidden;
+}
+
+
+/* timed quiz styling */
+
+.quiz-attempt {
+  font-family: Arial, sans-serif;
+  max-width: 1150px;
+  max-height: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  
+  
+}
+
+.timer {
+  text-align: center;
+  margin-bottom: 20px;
+  color: red; 
+}
+
+.heading-h3{
+  text-align: left;
+  font-size: 25px;
+   
+
+}
+
+.heading-h4{
+  text-align: right;
+  color: burlywood; 
+  font-size: 18px;
+
+}
+.option-container{
+
+  display: center;
+}
+
+
+.option-card {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 1000px;
+  padding: 15px;
+  margin: 10px 0;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+  background: #f9f9f9;
+  
+}
+
+.option-card:hover,
+.option-card:has(input:checked) {
+  border-color: #007bff;
+  background: #e7f0ff;
+}
+
+.option-card input[type="radio"] {
+  display: none;
+}
+
+.option-card label {
+  width: 100%;
+  cursor: pointer;
+ 
+}
+
+.navigation-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.navigation-buttons button {
+  padding: 10px 20px;
+  border: none;
+  background: #007bff;
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.navigation-buttons button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.show-score-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.score-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  max-width: 400px;
+  width: 100%;
+}
+
+.score-title {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.score-display {
+  font-size: 3rem;
+  font-weight: bold;
+  color: #4caf50;
+  margin-bottom: 1rem;
+}
+
+.score {
+  color: #4caf50;
+}
+
+.total {
+  color: #777;
+}
+
+.emoji {
+  font-size: 4rem;
+  margin-bottom: 1.5rem;
+}
+
+.buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.retake-btn,
+.view-answers-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.retake-btn {
+  background-color: #ff9800;
+  color: white;
+}
+
+.retake-btn:hover {
+  background-color: #e68900;
+}
+
+.view-answers-btn {
+  background-color: #2196f3;
+  color: white;
+}
+
+.view-answers-btn:hover {
+  background-color: #1e88e5;
+}
+
+/* Modal Styles */
+.modal-overlay {
   position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-.modal-content {
+.modal {
   background: white;
-  padding: 20px;
+  padding: 2rem;
   border-radius: 10px;
   text-align: center;
 }
 
-.close-btn {
-  cursor: pointer;
-  color: red;
-  font-size: 20px;
-  float: right;
+.modal h3 {
+  margin-bottom: 1.5rem;
 }
 
+.modal-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.modal-buttons button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.modal-buttons button:first-child {
+  background-color: #4caf50;
+  color: white;
+}
+
+.modal-buttons button:last-child {
+  background-color: #f44336;
+  color: white;
+}
