@@ -138,7 +138,7 @@ const ReattemptQuiz= {
 
 
     async submitQuiz() {
-      console.log("User Answers:", this.userAnswers); // ✅ Debugging step
+      console.log("User Answers:", this.userAnswers); 
     
       if (!this.score_id) {
         console.error("Error: score_id is undefined!");
@@ -153,7 +153,7 @@ const ReattemptQuiz= {
     
       try {
         const payload = {
-          answers: this.userAnswers,  // ✅ Ensure it's not empty
+          answers: this.userAnswers, 
           time_stamp_of_attempt: new Date().toISOString(),
         };
     

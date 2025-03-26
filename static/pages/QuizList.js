@@ -72,7 +72,7 @@ const QuizList = {
         
         this.quizzes = await response.json();
         
-        // Fetch chapter details if viewing specific chapter
+       
         if (this.chapter_id) {
           const chapterRes = await fetch(`/api/chapters/${this.chapter_id}`);
           if (chapterRes.ok) {
@@ -80,7 +80,7 @@ const QuizList = {
           }
         }
         
-        // Fetch user scores if needed
+        
         await this.fetchUserScores();
       } catch (err) {
         this.error = err.message;
@@ -108,7 +108,7 @@ const QuizList = {
           }
         }
     
-        //await this.fetchUserScores();
+       
       } catch (err) {
         this.error = err.message;
         console.error("Error fetching quizzes:", err);

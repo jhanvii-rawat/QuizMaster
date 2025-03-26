@@ -139,13 +139,13 @@ const QuizAttempt = {
         const result = await response.json();
         console.log("Quiz Submission Response:", result);
 
-        // ✅ Directly redirect to ShowScore with the score_id
+        
         if (result.score_id) {
           this.$router.push({
             name: "ShowScore",
             params: {
               quiz_id: quiz_id,
-              score_id: result.score_id, // Pass score_id to ShowScore
+              score_id: result.score_id, 
             },
           });
         } else {

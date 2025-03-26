@@ -191,7 +191,7 @@ const QuizAdmin = {
 },
       
       created() {
-        this.fetchQuiz(); // Fetch quiz when component is mounted
+        this.fetchQuiz(); 
       
       
     }

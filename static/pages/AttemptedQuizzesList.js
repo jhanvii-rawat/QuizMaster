@@ -31,7 +31,6 @@ const AttemptedQuizzesList = {
           headers: { "Content-Type": "application/json" },
         });
     
-        // Fix: Ensure the response is valid JSON before parsing
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
