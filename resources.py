@@ -1132,3 +1132,67 @@ class DashboardUserResource(Resource):
 
 api.add_resource(DashboardUserResource, "/dashboard-user")
 
+
+
+class ExploreSubjectsResource(Resource):
+    @login_required
+    def get(self):
+        try:
+            subjects = Subject.query.all()
+            subject_list = []
+            
+            for subject in subjects:
+                chapter_count = Chapter.query.filter_by(subject_id=subject.id).count()
+                
+                quiz_count = db.session.query(Quiz)\
+                    .join(Chapter, Chapter.id == Quiz.chapter_id)\
+                    .filter(Chapter.subject_id == subject.id)\
+                    .count()
+                
+                subject_list.append({
+                    'id': subject.id,
+                    'name': subject.name,
+                    'description': subject.description,  
+                    'chapter_count': chapter_count,
+                    'quiz_count': quiz_count
+                })
+            
+            return jsonify(subject_list)
+        
+        except Exception as e:
+            return {"error": str(e)}, 500
+
+api.add_resource(ExploreSubjectsResource, '/explore-subjects')
+
+
+
+class ExploreChaptersResource(Resource):
+    def get(self, subject_id):
+        try:
+            subject = Subject.query.get(subject_id)
+            if not subject:
+                return {"error": "Subject not found"}, 404
+                
+            chapters = Chapter.query.filter_by(subject_id=subject_id).all()
+            chapter_list = []
+            
+            for chapter in chapters:
+                quiz_count = Quiz.query.filter_by(chapter_id=chapter.id).count()
+                chapter_list.append({
+                    'id': chapter.id,
+                    'name': chapter.name,
+                    'description': chapter.description,
+                    'quiz_count': quiz_count
+                })
+
+            return {
+                'subject_name': subject.name,  # Make sure this is included
+                'chapters': chapter_list
+            }
+
+        except Exception as e:
+            return {"error": str(e)}, 500
+
+api.add_resource(ExploreChaptersResource, '/explore-chapters/<int:subject_id>')
+
+

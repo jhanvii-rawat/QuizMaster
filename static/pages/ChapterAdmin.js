@@ -60,12 +60,12 @@ const ChapterAdmin = {
         async fetchChapter() {
       const chapter_id = this.$route.params.chapter_id;
       try {
-        // Fetch chapter data
+       
         const chapterRes = await fetch(`/api/chapters/${chapter_id}`);
         if (!chapterRes.ok) throw new Error("Failed to fetch chapter");
         this.chapter = await chapterRes.json();
         
-        // Fetch enriched quiz data
+       
         const quizzesRes = await fetch(`/api/quizzes/${chapter_id}`);
         if (quizzesRes.ok) {
           this.quizzes = await quizzesRes.json();

@@ -14,6 +14,8 @@ import ShowScore from "../pages/ShowScore.js"
 import ViewAnswers from "../pages/ViewAnswers.js";
 import AttemptedQuizzesList from "../pages/AttemptedQuizzesList.js";
 import ReattemptQuiz from "../pages/ReattemptQuiz.js";
+import ExploreSubjects from "../pages/ExploreSubjects.js";
+import ExploreChapters from "../pages/ExploreChapters.js";
 
 
 import DashboardUser from "../pages/DashboardUser.js";
@@ -41,6 +43,8 @@ const routes = [
   { path: "/quiz/:quiz_id/reattempt/", name: "ReattemptQuiz", component: ReattemptQuiz },
   { path: "/attempted-quizzes", name: "AttemptedQuizzesList", component: AttemptedQuizzesList },
   { path: "/dashboard-user", name: "DashboardUser", component: DashboardUser },
+  { path: "/explore-subjects", component: ExploreSubjects},
+  { path: "/explore-chapters/:subject_id", component: ExploreChapters},
 
 ];
 
