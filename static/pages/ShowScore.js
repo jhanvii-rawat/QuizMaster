@@ -1,5 +1,3 @@
-import router from "../utils/router.js";
-
 const ShowScore = {
   template: `
     <div class="show-score-container">
@@ -12,34 +10,22 @@ const ShowScore = {
         <div class="emoji">
           {{ emoji }}
         </div>
-        <div class="buttons">
-          <button class="retake-btn" @click="showWarning">Retake Quiz</button>
-          <button class="view-answers-btn" @click="viewAnswers">View Answers</button>
-        </div>
-      </div>
-
-      <!-- Warning Modal -->
-      <div v-if="showWarningModal" class="modal-overlay">
-        <div class="modal">
-          <h3>Want to reattempt the Quiz?</h3>
-          <div class="modal-buttons">
-            <button @click="handleReattempt">Yes</button>
-            <button @click="handleGoBack">No</button>
-          </div>
-        </div>
+        <p class="redirect-message">Redirecting to Attempted Quizzes in {{ countdown }} seconds...</p>
       </div>
     </div>
   `,
 
   data() {
     return {
-      score: this.$route.params.score,
-      emoji: "",
-      showWarningModal: false,
+      score: null, // The user's score
+      emoji: "", // Emoji based on the score
+      countdown: 8, // Countdown timer for redirection
+      timer: null, // Timer for the countdown
     };
   },
 
   computed: {
+    // Determine the emoji based on the score
     scoreRange() {
       if (this.score >= 95) return "🥇";
       if (this.score >= 80) return "🎉";
@@ -49,39 +35,57 @@ const ShowScore = {
   },
 
   methods: {
-    reattemptQuiz() {
-      this.$router.push({ 
-        name: "ReattemptQuiz", 
-        params: { 
-          quiz_id: this.$route.params.quiz_id, // Only quiz_id is needed
+    // Disable the back button
+    disableBackButton() {
+      window.onpopstate = () => {
+        this.$router.push({ name: "AttemptedQuizzesList" });
+      };
+    },
+
+    // Start the countdown timer
+    startCountdown() {
+      this.timer = setInterval(() => {
+        this.countdown -= 1; // Decrease the countdown by 1 second
+
+        // Redirect to AttemptedQuizzesList when the countdown reaches 0
+        if (this.countdown === 0) {
+          clearInterval(this.timer); // Stop the timer
+          this.$router.push({ name: "AttemptedQuizzesList" }); // Redirect
         }
-      });
-    },
-  
-    viewAnswers() {
-      this.$router.push({ 
-        name: "ViewAnswers", 
-        params: { quiz_id: this.$route.params.quiz_id } 
-      });
-    },
-  
-    handleReattempt() {
-      this.showWarningModal = false;
-      this.reattemptQuiz(); 
-    },
-  
-    handleGoBack() {
-      this.showWarningModal = false;
-      this.$router.push({ name: "AttemptedQuizzesList" });
-    },
-  
-    showWarning() {
-      this.showWarningModal = true;
+      }, 1000); // Update every 1 second
     },
   },
 
-  mounted() {
-    this.emoji = this.scoreRange;
+  async mounted() {
+    // Fetch the score data using score_id from the route
+    if (!this.$route.params.score_id) {
+      console.error("❌ Error: score_id is missing in the URL.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/scores/${this.$route.params.score_id}`);
+      if (!response.ok) throw new Error("Failed to fetch score");
+
+      const data = await response.json();
+      this.score = data.total_scored; // Set the score
+      this.emoji = this.scoreRange; // Set the emoji based on the score
+    } catch (error) {
+      console.error("Error fetching score:", error);
+    }
+
+    // Disable the back button
+    this.disableBackButton();
+
+    // Start the countdown timer
+    this.startCountdown();
+  },
+
+  beforeDestroy() {
+    // Clear the timer when the component is destroyed
+    if (this.timer) {
+      clearInterval(this.timer);
+    }
   },
 };
 

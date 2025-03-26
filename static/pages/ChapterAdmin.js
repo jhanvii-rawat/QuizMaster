@@ -13,11 +13,11 @@ const ChapterAdmin = {
           <div v-for="quiz in quizzes" :key="quiz.id" class="chapter-card">
             <div class="card">
               <div class="card-body">
-                <h4 class="card-title">Quiz on {{ quiz.date_of_quiz }}</h4>
+                <h4 class="card-title">{{ quiz.remarks || 'No remarks' }}</h4>
                 <p class="card-text">Duration: {{ quiz.time_duration || 'Not specified' }}</p>
-                <p class="card-text">Remarks: {{ quiz.remarks || 'No remarks' }}</p>
-                <p class="card-text">Total Questions: {{ quiz.total_questions || 'N/A' }}</p>
-                <p class="card-text">Attempts: {{ quiz.attempts || 'N/A' }}</p>
+                <p class="card-text">Added on {{ quiz.date_of_quiz }}</p>
+                <p class="card-text">Total Questions: {{ quiz.total_questions || '0' }}</p>
+             
                 <div class="button-group">
                   <button class="btn btn-outline-primary" @click="viewQuiz(quiz.id)">View Quiz</button>
                   <button class="btn btn-outline-secondary" @click="editQuiz(quiz)">Edit</button>
@@ -34,10 +34,11 @@ const ChapterAdmin = {
       <div v-if="showQuizModal" class="modal">
         <div class="modal-content">
           <span class="close-btn" @click="closeModal">×</span>
+          <input type="text" v-model="newQuiz.remarks" placeholder="Title">
           <h3>{{ editingQuiz ? 'Edit Quiz' : 'Add Quiz' }}</h3>
           <input type="date" v-model="newQuiz.date_of_quiz" placeholder="Date of Quiz" required>
           <input type="text" v-model="newQuiz.time_duration" placeholder="Duration (HH:MM)">
-          <input type="text" v-model="newQuiz.remarks" placeholder="Remarks">
+       
           <button class="submit-btn" @click="editingQuiz ? updateQuiz() : addQuiz()">Submit</button>
         </div>
       </div>
@@ -56,14 +57,21 @@ const ChapterAdmin = {
   },
 
   methods: {
-    async fetchChapter() {
+        async fetchChapter() {
       const chapter_id = this.$route.params.chapter_id;
       try {
-        const response = await fetch(`/api/chapters/${chapter_id}`);
-        if (!response.ok) throw new Error("Failed to fetch chapter");
-        const data = await response.json();
-        this.chapter = data;
-        this.quizzes = data.quizzes || [];
+        // Fetch chapter data
+        const chapterRes = await fetch(`/api/chapters/${chapter_id}`);
+        if (!chapterRes.ok) throw new Error("Failed to fetch chapter");
+        this.chapter = await chapterRes.json();
+        
+        // Fetch enriched quiz data
+        const quizzesRes = await fetch(`/api/quizzes/${chapter_id}`);
+        if (quizzesRes.ok) {
+          this.quizzes = await quizzesRes.json();
+        } else {
+          this.quizzes = this.chapter.quizzes || [];
+        }
       } catch (error) {
         console.error("Error fetching chapter:", error);
       }

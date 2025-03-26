@@ -137,7 +137,20 @@ const QuizAttempt = {
         if (!response.ok) throw new Error("Failed to submit quiz");
 
         const result = await response.json();
-        this.$router.push({ name: "ShowScore", params: { quiz_id: quiz_id, score: result.total_scored } });
+        console.log("Quiz Submission Response:", result);
+
+        // ✅ Directly redirect to ShowScore with the score_id
+        if (result.score_id) {
+          this.$router.push({
+            name: "ShowScore",
+            params: {
+              quiz_id: quiz_id,
+              score_id: result.score_id, // Pass score_id to ShowScore
+            },
+          });
+        } else {
+          console.error("Error: score_id is missing in API response.");
+        }
       } catch (error) {
         console.error("Error submitting quiz:", error);
       }

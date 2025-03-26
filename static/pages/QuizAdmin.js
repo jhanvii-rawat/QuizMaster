@@ -124,7 +124,7 @@ const QuizAdmin = {
             if (!response.ok) throw new Error("Failed to fetch quiz data");
             const quizData = await response.json();
             this.quiz = quizData;
-            this.questions = quizData.questions;  // Populate the questions array
+            this.questions = quizData.questions;  
         } catch (error) {
             console.error("Error fetching quiz:", error);
             alert("Failed to fetch quiz. Please try again.");
@@ -134,8 +134,8 @@ const QuizAdmin = {
     editQuestion(question) {
         this.newQuestion = { ...question };  
         this.editingQuestion = true;
-        this.editQuestionId = question.id;  // Store the ID of the question being edited
-        this.showQuestionModal = true;  // Show the modal
+        this.editQuestionId = question.id;  
+        this.showQuestionModal = true; 
     },
 
     async updateQuestion() {

@@ -1,6 +1,7 @@
 ## API calls/ CRUD goes from here
 
 from io import StringIO
+import random
 from flask import Response, jsonify, request
 from flask_login import current_user, login_required
 from sqlalchemy import func, text
@@ -47,24 +48,23 @@ class QuestionResource(Resource):
     def post(self):
         args = question_parser.parse_args()
 
-        # Ensure the provided quiz_id exists
         quiz = Quiz.query.get(args['quiz_id'])
         if not quiz:
             return {'message': 'Quiz not found'}, 404
 
-        # Validate correct_option
+     
         valid_options = [args['option1'], args['option2'], args.get('option3'), args.get('option4')]
         if args['correct_option'] not in valid_options:
             return {'message': 'Correct option must match one of the provided options'}, 400
 
-        # Create and save the new question
+ 
         try:
             new_question = Question(
                 quiz_id=args['quiz_id'],
                 question_statement=args['question_statement'],
                 option1=args['option1'],
                 option2=args['option2'],
-                option3=args.get('option3'),  # Optional fields
+                option3=args.get('option3'), 
                 option4=args.get('option4'),
                 correct_option=args['correct_option']
             )
@@ -87,17 +87,15 @@ class QuestionResource(Resource):
     def put(self, question_id):
         args = question_parser.parse_args()
 
-        # Fetch the question to be edited
+
         question = Question.query.get(question_id)
         if not question:
             return {'message': 'Question not found'}, 404
 
-        # Validate correct_option
         valid_options = [args['option1'], args['option2'], args.get('option3'), args.get('option4')]
         if args['correct_option'] not in valid_options:
             return {'message': 'Correct option must match one of the provided options'}, 400
 
-        # Update the question
         try:
             question.question_statement = args['question_statement']
             question.option1 = args['option1']
@@ -150,10 +148,10 @@ quiz_parser.add_argument('remarks', type=str, required=False, help="Remarks for 
 quiz_fields = {
     'id': fields.Integer,
     'chapter_id': fields.Integer,
-    'date_of_quiz': fields.String,  # Convert date to string format
-    'time_duration': fields.String,  # Convert time to string format
+    'date_of_quiz': fields.String,  
+    'time_duration': fields.String,  
     'remarks': fields.String,
-    'questions': fields.List(fields.Nested(question_fields))  # Includes related questions
+    'questions': fields.List(fields.Nested(question_fields)) 
 }
 
 
@@ -178,12 +176,11 @@ class QuizResource(Resource):
         time_duration = None
         if args.get('time_duration'):
             try:
-                time_parts = args['time_duration'].split(':')  # Expect "HH:MM"
+                time_parts = args['time_duration'].split(':')  
                 time_duration = time(int(time_parts[0]), int(time_parts[1]))
             except (ValueError, IndexError):
                 return {'message': 'Invalid time format. Use HH:MM'}, 400
 
-        # Create and save the new quiz
         new_quiz = Quiz(
             chapter_id=args['chapter_id'],
             date_of_quiz=date_of_quiz,
@@ -211,13 +208,13 @@ class QuizResource(Resource):
         if not quiz:
             return {'message': 'Quiz not found'}, 404
 
-        # Convert date_of_quiz
+        # Convert date of quiz
         try:
             quiz.date_of_quiz = datetime.strptime(args['date_of_quiz'], "%Y-%m-%d").date()
         except ValueError:
             return {'message': 'Invalid date format. Use YYYY-MM-DD'}, 400
 
-        #Convert time_duration
+        #Convert time
         if args.get('time_duration'):
             try:
                 time_parts = args['time_duration'].split(':')
@@ -233,10 +230,11 @@ class QuizResource(Resource):
     def get(self, quiz_id):
         quiz = Quiz.query.get(quiz_id)
         if not quiz:
-            return {'message': 'Quiz not found'}, 404
+            return {'message': 'Quiz is not found'}, 404
         
         chapter = Chapter.query.get(quiz.chapter_id)
-        subject = Subject.query.get(chapter.subject_id) if chapter else None  # Fetch the subject associated with the chapter
+        subject = Subject.query.get(chapter.subject_id) if chapter else None
+       
 
         return {
             'id': quiz.id,
@@ -244,7 +242,9 @@ class QuizResource(Resource):
             'time_duration': str(quiz.time_duration),
             'remarks': quiz.remarks,
             'chapter_name': chapter.name if chapter else "Unknown",
-            'subject_name': subject.name if subject else "Unknown",  # Access subject_name through the subject relationship
+            'subject_name': subject.name if subject else "Unknown",
+            'total_questions': len(quiz.questions),  
+           
             'questions': [
                 {
                     'id': q.id,
@@ -256,10 +256,11 @@ class QuizResource(Resource):
                     'correct_option': q.correct_option
                 }
                 for q in quiz.questions
-            ]
-
-            
+            ],
         }
+
+    
+
 
 api.add_resource(QuizResource, "/quiz", "/quiz/<int:quiz_id>")
 #####################################################################
@@ -273,13 +274,12 @@ chapter_parser.add_argument('description', type=str, required=False, help="Descr
 chapter_parser.add_argument('subject_id', type=int, required=True, help="Subject ID is required")
 
 
-# Chapter fields (includes quizzes)
 chapter_fields = {
     'id': fields.Integer,
     'name': fields.String,
     'description': fields.String,
     'subject_id': fields.Integer,
-    'quizzes': fields.List(fields.Nested(quiz_fields))  # Includes related quizzes
+    'quizzes': fields.List(fields.Nested(quiz_fields))  
 }
 
 #CRUD oop on chapters
@@ -290,7 +290,7 @@ class ChapterResource(Resource):
     def get(self, chapter_id):
         chapter = Chapter.query.get(chapter_id)
         if not chapter:
-            return {'message': 'Chapter not found'}, 404
+            return {'message': 'Chapter is not found'}, 404
         return chapter
     
     
@@ -317,21 +317,20 @@ class ChapterResource(Resource):
 
     @marshal_with(chapter_fields)
     def post(self):
-        # Parse and validate incoming data
+  
         args = chapter_parser.parse_args()
-        
-        # Create new chapter
+
         new_chapter = Chapter(
             name=args['name'],
             description=args['description'],
             subject_id=args['subject_id']
         )
 
-        # Add the new chapter to the database
+       
         db.session.add(new_chapter)
         db.session.commit()
 
-        return new_chapter, 201  # Return the created chapter with a 201 status code (Created)
+        return new_chapter, 201  
 
 
 #############################################################################
@@ -350,7 +349,7 @@ subject_fields = {
     'id': fields.Integer,
     'name': fields.String,
     'description': fields.String,
-    'chapters': fields.List(fields.Nested(chapter_fields))  # Includes related chapters
+    'chapters': fields.List(fields.Nested(chapter_fields))  
 }
 
 
@@ -462,7 +461,7 @@ class ScoreResource(Resource):
 
         user_answers = args.get("answers", {})
 
-        # ✅ Handle case where answers are missing or empty
+       
         if not user_answers:
             return jsonify({"message": "No answers provided"}), 400
 
@@ -505,7 +504,7 @@ class ScoreListResource(Resource):
         total_scored = args.get('total_scored')
 
         if not quiz_id or not user_id or not time_stamp_of_attempt or total_scored is None:
-            return {"message": "All fields are required"}, 400  # Bad Request
+            return {"message": "All fields are required"}, 400  
 
         new_score = Score(
         quiz_id=args["quiz_id"],
@@ -527,7 +526,7 @@ api.add_resource(ScoreResource, "/scores/<int:score_id>")
 #################### API END POINTS #########################
 
 
-api.add_resource(SubjectListResource, "/subjects")  # list of subject to be displayed
+api.add_resource(SubjectListResource, "/subjects")  # list
 api.add_resource(SubjectResource, "/subjects/<int:subject_id>")
 api.add_resource(ChapterResource, "/chapters", "/chapters/<int:chapter_id>")
 
@@ -558,7 +557,7 @@ class ReportResource(Resource):
         elif report_type == 'quiz_bubble':
             return self.get_quiz_bubble()
 
-        elif report_type == 'total_registered_users':  # Add this condition
+        elif report_type == 'total_registered_users':  
             return self.get_total_registered_users()
         
         elif report_type == 'subjects_chapters_quizzes':  
@@ -575,7 +574,7 @@ class ReportResource(Resource):
         return {'error': 'Invalid report type'}, 400
 
     def get_total_registered_users(self):
-        total_users = User.query.count()  # Get the total number of registered users
+        total_users = User.query.count()  #ets the total number of registered users
         return jsonify({"total": total_users})
 
 
@@ -606,7 +605,7 @@ class ReportResource(Resource):
 
         return jsonify([{"month": month, "count": count} for month, count in monthly_counts])
 
-    def get_quiz_bubble(self):  # Define the method correctly
+    def get_quiz_bubble(self): 
         subjects = Subject.query.options(joinedload(Subject.chapters).joinedload(Chapter.quizzes)).all()
         response = []
         for subject in subjects:
@@ -692,18 +691,18 @@ class ReportResource(Resource):
         # Define headers
         header = ["Subject ID", "Subject Name", "Chapter ID", "Chapter Name", "Quiz ID", "Quiz Name"]
 
-        # Create a StringIO object to hold the CSV data
+       
         output = StringIO()
         writer = csv.writer(output)
 
-        # Write the header
+   
         writer.writerow(header)
 
-        # Write the data rows
+
         for row in data:
             writer.writerow(row)
 
-        # Prepare the response
+
         output.seek(0)
         return Response(output, mimetype="text/csv", headers={"Content-Disposition": "attachment; filename=report.csv"})
 
@@ -718,21 +717,21 @@ class ReportResource(Resource):
             JOIN subjects s ON c.subject_id = s.id
         """).fetchall()
 
-        # Define headers
+    
         header = ["Attempt Time", "Quiz ID", "Quiz Name", "Chapter ID", "Subject ID"]
 
-        # Create a StringIO object to hold the CSV data
+      
         output = StringIO()
         writer = csv.writer(output)
 
-        # Write the header
+ 
         writer.writerow(header)
 
-        # Write the data rows
+
         for row in data:
             writer.writerow(row)
 
-        # Prepare the response
+    
         output.seek(0)
         return Response(output, mimetype="text/csv", headers={"Content-Disposition": "attachment; filename=quiz_attempts.csv"})
 
@@ -770,9 +769,10 @@ class QuizQuestionResource(Resource):
                 for q in quiz.questions
             ]
         }
-
-
 api.add_resource(QuizQuestionResource, "/quizzes/<int:quiz_id>/attempt")
+
+
+
 
 class QuizSubmissionResource(Resource):
     @login_required
@@ -787,13 +787,13 @@ class QuizSubmissionResource(Resource):
             if not quiz:
                 return {"message": "Quiz not found"}, 404
 
-            # ✅ Convert timestamp string to datetime object
+            
             try:
                 attempt_time = datetime.fromisoformat(data.get("time_stamp_of_attempt").replace("Z", ""))
             except ValueError:
                 return {"message": "Invalid datetime format"}, 400
 
-            # ✅ Calculate the score
+            
             total_score = 0
             for question in quiz.questions:
                 selected_answer = data.get("answers", {}).get(str(question.id), "").strip().lower()
@@ -803,76 +803,133 @@ class QuizSubmissionResource(Resource):
 
             total_scored = (total_score / len(quiz.questions)) * 100
 
-            # ✅ Save the score with a valid datetime object
+           
             new_score = Score(
                 quiz_id=quiz_id,
                 user_id=current_user.id,
-                time_stamp_of_attempt=attempt_time,  # Now properly converted
+                time_stamp_of_attempt=attempt_time,
                 total_scored=total_scored
             )
 
             db.session.add(new_score)
             db.session.commit()
 
-            return {"message": "Quiz submitted successfully", "total_scored": total_scored}, 201
+            score_id = Score.query.filter_by(
+        quiz_id=quiz_id, user_id=current_user.id
+    ).first().id
+
+           
+            return {
+                "message": "Quiz submitted successfully",
+                "total_scored": total_scored,
+                "score_id": score_id  
+            }, 201
+            
         except Exception as e:
             return {"message": str(e)}, 500
 
 api.add_resource(QuizSubmissionResource, "/quizzes/<int:quiz_id>/submit")
 
 
+
 class QuizListResource(Resource):
-    def get(self):
-        quizzes = Quiz.query.all()
-        quiz_list = []
-        
-        for quiz in quizzes:
-            chapter = Chapter.query.get(quiz.chapter_id)
-            subject = Subject.query.get(chapter.subject_id) if chapter else None  
+    @login_required
+    def get(self, chapter_id=None):
+        try:
+            query = Quiz.query.options(
+                db.joinedload(Quiz.questions),
+                db.joinedload(Quiz.chapter)
+            )
 
-            quiz_list.append({
-                'id': quiz.id,
-                'date_of_quiz': quiz.date_of_quiz.strftime('%Y-%m-%d'),
-                'time_duration': str(quiz.time_duration),
-                'remarks': quiz.remarks,
-                'chapter_name': chapter.name if chapter else "Unknown",
-                'subject_name': subject.name if subject else "Unknown"
-            })
+            if chapter_id is not None:
+                chapter = Chapter.query.get(chapter_id)
+                if not chapter:
+                    return {"error": "Chapter not found"}, 404
+                query = query.filter_by(chapter_id=chapter_id)
 
-        return jsonify(quiz_list)
-    
-api.add_resource(QuizListResource, '/quizzes')  # Handles listing all quizzes
+            quizzes = query.all()
+            quiz_list = []
+
+            for quiz in quizzes:
+                
+                score = Score.query.filter_by(
+                    user_id=current_user.id,
+                    quiz_id=quiz.id
+                ).order_by(Score.time_stamp_of_attempt.desc()).first()
+
+                quiz_list.append({
+                    'id': quiz.id,
+                    'chapter_id': quiz.chapter_id,
+                    'date_of_quiz': quiz.date_of_quiz.strftime('%Y-%m-%d'),
+                    'remarks': quiz.remarks,
+                    'total_questions': len(quiz.questions),
+                    'time_duration': str(quiz.time_duration),
+                    'chapter_name': quiz.chapter.name if quiz.chapter else "Unknown",
+                    'marks': score.total_scored if score else None, 
+                    'retake_quiz': True if score else False,  
+                    'view_answers': True if score else False  
+                })
+
+            return jsonify(quiz_list)
+
+        except Exception as e:
+            return {"error": str(e)}, 500
+
+
+api.add_resource(QuizListResource, '/quizzes', '/quizzes/<int:chapter_id>')
 
 
 
 class QuizAnswersResource(Resource):
+    @login_required
     def get(self, quiz_id):
-        quiz = Quiz.query.get(quiz_id)
-        
-        if not quiz:
-            return {'message': 'Quiz not found'}, 404
+        try:
+            quiz = Quiz.query.get(quiz_id)
+            if not quiz:
+                return {"error": f"Quiz with ID {quiz_id} not found"}, 404
             
-        return {
-            'id': quiz.id,
-            'questions': [
-                {
-                    'id': q.id,
-                    'question_statement': q.question_statement,
-                    'options': [q.option1, q.option2, q.option3, q.option4],
-                    'correct_option': q.correct_option
-                }
-                for q in quiz.questions
-            ]
-        }
+            attempt = Score.query.filter_by(
+                user_id=current_user.id,
+                quiz_id=quiz_id
+            ).first()
 
-api.add_resource(QuizAnswersResource, "/api/quizzes/<int:quiz_id>/answers")
+            if not attempt:
+                return {"error": "You must attempt the quiz before viewing answers"}, 403
+
+            questions = [{
+                'id': q.id,
+                'question_statement': q.question_statement,
+                'options': [
+                    {'text': q.option1, 'is_correct': q.correct_option == "1"},
+                    {'text': q.option2, 'is_correct': q.correct_option == "2"},
+                    {'text': q.option3, 'is_correct': q.correct_option == "3"},
+                    {'text': q.option4, 'is_correct': q.correct_option == "4"},
+                ],
+                'correct_option': q.correct_option
+            } for q in quiz.questions]
+
+            return {
+                'quiz_title': quiz.remarks,
+                'questions': questions,
+                'score': attempt.total_scored,
+                'total_questions': len(questions)
+            }
+
+        except Exception as e:
+            return {"error": str(e)}, 500
+
+api.add_resource(QuizAnswersResource, '/quiz/<int:quiz_id>/answers')
+
+
+
+
 
 
 class QuizReattemptResource(Resource):
     def get(self, quiz_id):
         quiz = Quiz.query.get(quiz_id)
         if not quiz:
-            return {'message': 'Quiz not found'}, 404  # ✅ Correct response for missing quiz
+            return {'message': 'Quiz not found'}, 404 
 
         chapter = Chapter.query.get(quiz.chapter_id)
         subject = Subject.query.get(chapter.subject_id) if chapter else None
@@ -882,21 +939,19 @@ class QuizReattemptResource(Resource):
             'date_of_quiz': quiz.date_of_quiz.strftime('%Y-%m-%d'),
             'time_duration': str(quiz.time_duration),
             'remarks': quiz.remarks,
+            'total_questions': len(quiz.questions),
             'chapter_name': chapter.name if chapter else "Unknown",
             'subject_name': subject.name if subject else "Unknown",
             'questions': [
                 {
                     'id': q.id,
                     'question_statement': q.question_statement,
-                    'options': [q.option1, q.option2, q.option3, q.option4],  # ✅ Fix: Ensure options are in a list
+                    'options': [q.option1, q.option2, q.option3, q.option4], 
                     'correct_option': q.correct_option
                 }
                 for q in quiz.questions
             ]
         }
-
-
-# Register the endpoint
 api.add_resource(QuizReattemptResource, "/api/quiz/<int:quiz_id>/reattempt")
 
 
@@ -915,19 +970,19 @@ class QuizzUpdateScoreResource(Resource):
             if not quiz:
                 return {"message": "Quiz not found"}, 404
 
-            # ✅ Find existing score record
+           
             existing_score = Score.query.filter_by(user_id=current_user.id, quiz_id=quiz_id).first()
 
             if not existing_score:
                 return {"message": "Score record not found for this user and quiz"}, 404
 
-            # ✅ Convert timestamp
+           
             try:
                 attempt_time = datetime.fromisoformat(data.get("time_stamp_of_attempt").replace("Z", ""))
             except ValueError:
                 return {"message": "Invalid datetime format"}, 400
 
-            # ✅ Calculate the new score
+           
             total_score = 0
             for question in quiz.questions:
                 selected_answer = data.get("answers", {}).get(str(question.id), "").strip().lower()
@@ -937,7 +992,7 @@ class QuizzUpdateScoreResource(Resource):
 
             total_scored = (total_score / len(quiz.questions)) * 100
 
-            # ✅ Update the existing score record
+           
             existing_score.total_scored = total_scored
             existing_score.time_stamp_of_attempt = attempt_time
 
@@ -947,6 +1002,133 @@ class QuizzUpdateScoreResource(Resource):
         except Exception as e:
             return {"message": str(e)}, 500
 
-# ✅ Register the resource with Flask
+
 api.add_resource(QuizzUpdateScoreResource, "/quizzes/<int:quiz_id>/update-score")
+
+
+
+
+class ScoreRedirectionResource(Resource):
+    @login_required
+    def post(self):
+        data = request.get_json()
+
+        if not data or "quiz_id" not in data:
+            return {"message": "Invalid request body"}, 400
+
+        quiz_id = data["quiz_id"]
+
+        # Fetch the latest score for the current user and quiz
+        latest_score = Score.query.filter_by(
+            quiz_id=quiz_id,
+            user_id=current_user.id
+        ).order_by(Score.time_stamp_of_attempt.desc()).first()
+
+        if not latest_score:
+            return {"message": "No score found for this quiz"}, 404
+
+        # Return the score_id for redirection
+        return {
+            "message": "Redirecting to ShowScore",
+            "score_id": latest_score.id,
+        }, 200
+
+
+
+api.add_resource(ScoreRedirectionResource, "/score/redirect")
+
+
+
+class AttemptedQuizzesResource(Resource):
+    @login_required
+    def get(self):
+        # Fetch all scores for the current user
+        scores = Score.query.filter_by(user_id=current_user.id).all()
+      
+    
+       
+        if not scores:
+            return {"success": False, "quizzes": []}, 200 
+
+       
+        scores = Score.query.filter_by(user_id=current_user.id).all()
+        quizzes = []    
+        for score in scores:
+            quiz = Quiz.query.get(score.quiz_id)
+            chapter = Chapter.query.get(quiz.chapter_id)
+            subject = Subject.query.get(chapter.subject_id)
+
+        quizzes.append({
+            "quiz_id": quiz.id,
+            "title": quiz.remarks,  
+            "chapter": chapter.name,
+            "subject": subject.name,
+            "score": score.total_scored,
+            "time_taken": "N/A",  
+        })
+
+        return {
+            "success": True,
+            "quizzes": quizzes,
+        }, 200
+
+api.add_resource(AttemptedQuizzesResource, "/attempted-quizzes")  
+
+
+
+
+class DashboardUserResource(Resource):
+    @login_required
+    def get(self):
+       
+        scores = Score.query.filter_by(user_id=current_user.id).all()
+
+       
+        chapters_progress = {}
+
+        for score in scores:
+            quiz = Quiz.query.get(score.quiz_id)
+            chapter = Chapter.query.get(quiz.chapter_id)
+            subject = Subject.query.get(chapter.subject_id)
+
+            # Update chapter progress
+            if chapter.id not in chapters_progress:
+                chapters_progress[chapter.id] = {
+                    "chapter_name": chapter.name,
+                    "subject_name": subject.name,
+                    "total_quizzes": Quiz.query.filter_by(chapter_id=chapter.id).count(),
+                    "attempted_quizzes": 0,
+                }
+            chapters_progress[chapter.id]["attempted_quizzes"] += 1
+
+        continue_chapters = []
+        for chapter_id, data in chapters_progress.items():
+            if data["attempted_quizzes"] < data["total_quizzes"]:
+                progress = (data["attempted_quizzes"] / data["total_quizzes"]) * 100
+                continue_chapters.append({
+                    "chapter_id": chapter_id,
+                    "chapter_name": data["chapter_name"],
+                    "subject_name": data["subject_name"],
+                    "progress": progress,
+                })
+
+        
+        continue_subjects = []
+        subjects = Subject.query.join(Chapter).join(Quiz).join(Score).filter(
+            Score.user_id == current_user.id
+        ).distinct().all()
+        
+        for subject in subjects:
+            continue_subjects.append({
+                "subject_id": subject.id,
+                "subject_name": subject.name
+            })
+
+        return jsonify({
+            "success": True,
+            "continue_chapters": continue_chapters,
+            "continue_subjects": continue_subjects,
+        })
+
+api.add_resource(DashboardUserResource, "/dashboard-user")
 

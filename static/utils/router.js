@@ -15,7 +15,8 @@ import ViewAnswers from "../pages/ViewAnswers.js";
 import AttemptedQuizzesList from "../pages/AttemptedQuizzesList.js";
 import ReattemptQuiz from "../pages/ReattemptQuiz.js";
 
-//import DashboardStud from "../pages/DashboardUser.js";
+
+import DashboardUser from "../pages/DashboardUser.js";
 
 const routes = [
   { path: "/", component: Home },
@@ -28,16 +29,18 @@ const routes = [
   { path: "/admin-reports", component: ReportsAdmin },
   { path: "/quiz/:quiz_id", component: QuizAdmin },
 
-  { path: "/quiz-list", component: QuizList },
+  { path: "/quizzes/:chapter_id", component: QuizList, props: true },
   
   { path: "/quiz/:quiz_id/attempt", component: QuizAttempt },
-  { path: "/quiz/:quiz_id/submit", component: QuizAttempt },
-  { path: "/quiz/:quiz_id/score/:score", component: ShowScore, name: "ShowScore" },
+ 
+  { path: "/quiz/:quiz_id/scores/:score_id", component: ShowScore, name: "ShowScore" },
   { path: "/quiz/:quiz_id/answers", name: "ViewAnswers", component: ViewAnswers },
-  { path: "/attempted-quizzes", name: "AttemptedQuizzesList", component: AttemptedQuizzesList },
+
 
   
   { path: "/quiz/:quiz_id/reattempt/", name: "ReattemptQuiz", component: ReattemptQuiz },
+  { path: "/attempted-quizzes", name: "AttemptedQuizzesList", component: AttemptedQuizzesList },
+  { path: "/dashboard-user", name: "DashboardUser", component: DashboardUser },
 
 ];
 
