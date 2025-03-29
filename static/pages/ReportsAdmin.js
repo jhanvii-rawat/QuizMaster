@@ -27,9 +27,7 @@ const ReportsAdmin = {
         </div>
       </div>
     </div>
-    <div class="button-card">
-    <button @click="downloadCSV">Download CSV</button>
-    </div>
+    
 
     <!-- Report Section -->
     <div class="card-for-report">
@@ -53,12 +51,10 @@ const ReportsAdmin = {
 
       <!-- Total in Year 2025 -->
       <div class="year-total-section">
-        <h3>Total in Year 2025</h3>
+        <h3>Total Quiz Taken in Year 2025</h3>
         <p>{{ totalInYear2025 }}</p>
       </div>
-      <div class="button-card">
-    <button @click="downloadCSVQuizattempt">Download Quiz attempt data</button>
-    </div>
+      
 
       
     
@@ -166,10 +162,11 @@ const ReportsAdmin = {
       fetch("/api/report?type=total_in_year_2025")
         .then(response => response.json())
         .then(data => {
-          this.totalInYear2025 = data.total;
+          this.totalInYear2025 = data.total_quizzes; // Correct key
         })
         .catch(error => console.error("Error fetching total in year 2025 data:", error));
-    },
+    }
+    ,
 
     fetchAndRenderUserQuizChart() {
       fetch(`/api/report?type=user_quiz&filter=${this.timeFilter}`)
@@ -290,35 +287,6 @@ const ReportsAdmin = {
         });
     },
 
-    downloadCSV() {
-      fetch("/api/report?type=download_csv")
-        .then(response => response.blob())
-        .then(blob => {
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = "subject_report.csv";
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-        })
-        .catch(error => console.error("Error downloading CSV:", error));
-    },
-
-    downloadCSVQuizattempt() {
-      fetch("/api/report?type=download_csv_quiz_attempt")
-        .then(response => response.blob())
-        .then(blob => {
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = "quiz_attempts.csv";
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-        })
-        .catch(error => console.error("Error downloading CSV Quiz Attempt:", error));
-    }
   }
 };
 

@@ -1,10 +1,16 @@
+import celery
 from flask import Flask
+
 import views
-from extentions import db, security
+from extentions import db, security, cache
 from initial_data import create_data
 from dotenv import load_dotenv
 import os
+from worker import celery_init_app
 import resources
+import flask_excel as excel
+from celery.schedules import crontab
+from task import daily_reminder, monthly_report
 
 
 
@@ -24,10 +30,15 @@ def create_app():
 
     # cache config
 
-    #app.config["CACHE_DEFAULT_TIMEOUT"] = 300
-    #app.config["DEBUG"] = True
-    #app.config["CACHE_TYPE"] = "RedisCache"
-    #app.config["CACHE_REDIS_PORT"] = 6379
+    app.config["CACHE_DEFAULT_TIMEOUT"] = 300
+    app.config["DEBUG"] = True
+    app.config["CACHE_TYPE"] = "RedisCache"
+    app.config["CACHE_REDIS_PORT"] = 6379
+    app.config['CACHE_REDIS_DB'] = 0
+    app.config['CACHE_REDIS_URL'] = 'redis://localhost:6379/0'
+    
+
+    cache.init_app(app)
 
 
 
@@ -54,7 +65,30 @@ def create_app():
 
     return app
 
+celery_app = None
+app = create_app()
+
+    # cerating celery application
+celery = celery_init_app(app)
+excel.init_excel(app)
+celery.autodiscover_tasks
+
+
+
+@celery.on_after_finalize.connect
+def setup_periodic_task(sender, **kwargs):
+    sender.add_periodic_task(
+        crontab('*/10'),
+        monthly_report.s(),
+    )
+
+    sender.add_periodic_task(
+        #crontab(hour=2, minute=59),
+        crontab('*/1'),
+        daily_reminder.s(),
+    )
+
 
 if __name__ == "__main__":
-    app = create_app()
+   
     app.run(debug=True)

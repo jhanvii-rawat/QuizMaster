@@ -1,5 +1,6 @@
 const ExploreSubjects = {
     template: `
+    
       <div class="explore-subjects">
         <div class="search-bar">
           <input 
@@ -13,6 +14,8 @@ const ExploreSubjects = {
             <i class="fas fa-search"></i>
           </button>
         </div>
+
+        <h2> Explore Subjects</h2>
   
         <div v-if="loading" class="loading">Loading subjects...</div>
         <div v-else-if="error" class="error">{{ error }}</div>
@@ -23,7 +26,7 @@ const ExploreSubjects = {
           <div 
             v-for="subject in filteredSubjects" 
             :key="subject.id" 
-            class="subject-card"
+            class="explore-subject-card"
             @click="viewSubject(subject.id)"
           >
             <div class="subject-header">

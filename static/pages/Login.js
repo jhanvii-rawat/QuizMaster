@@ -1,4 +1,5 @@
 import router from "../utils/router.js";
+import store from "../utils/store.js";
 
 const Login = {
   template: `
@@ -26,29 +27,39 @@ const Login = {
     return {
       email: "",
       password: "",
+      role: ""
     };
   },
   methods: {
     async submitInfo() {
-      const origin = window.location.origin;
-      const url = `${origin}/login`;
-      const res = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email: this.email, password: this.password }),
-        credentials: "same-origin",
-      });
+      try{
+      const res = await fetch(location.origin + '/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: this.email, password: this.password })
+    });
 
-      if (res.ok) {
-        const data = await res.json();
-        console.log(data);
-        router.push("/dashboard");
-      } else {
-        const errorData = await res.json();
-        console.error("Login failed:", errorData);
-      }
+    this.$store.commit("setLogin", true);
+    console.log(store.state.loggedIn);
+
+    if (this.email == 'admin@iitm.ac.in') {
+      this.$store.commit("setRole", "admin");
+        
+      router.push("/admin-reports");
+    } 
+    else {
+      this.$store.commit("setRole", "user");
+        
+        router.push("/dashboard-user");
+    }
+    
+  }
+  
+    catch (error) {
+      const errorData = await res.json();
+      console.error("Login failed:", errorData);
+    }
+  
     },
   },
 };

@@ -28,16 +28,20 @@ const DashboardUser = {
 
       <!-- Continue Subjects Section -->
       <div class="section">
-        <h2>Continue Subjects</h2>
-        <div v-if="continueSubjects.length === 0" class="no-data">
-          No subjects to continue.
-        </div>
-        <div v-else class="card-list">
-          <div v-for="subject in continueSubjects" :key="subject.subject_id" class="card">
-            <h3>{{ subject.subject_name }}</h3>
-          </div>
-        </div>
-      </div>
+  <h2>Continue Subjects</h2>
+  <div v-if="continueSubjects.length === 0" class="no-data">
+    No subjects to continue.
+  </div>
+  <div v-else class="card-list">
+    <div v-for="subject in continueSubjects" 
+         :key="subject.subject_id" 
+         class="card clickable-card"
+         @click="viewSubjectChapters(subject.subject_id)">
+      <h3>{{ subject.subject_name }}</h3>
+      <p>Click to view more Quizzes</p>
+    </div>
+  </div>
+</div>
     </div>
   `,
 
@@ -72,6 +76,10 @@ const DashboardUser = {
 
     viewChapterQuizzes(chapter_id) {
       this.$router.push(`/quizzes/${chapter_id}`);
+    },
+
+    viewSubjectChapters(subject_id) {
+      this.$router.push(`/explore-chapters/${subject_id}`);
     }
   },
 

@@ -4,7 +4,7 @@ const ChapterAdmin = {
       <br>
       <div class="subjects-header">
         <h2>All Quizzes for Chapter: {{ chapter.name }}</h2>
-        <button class="btn btn-outline-dark" @click="downloadCSV">Download CSV</button>
+       
         <button class="btn btn-outline-dark" @click="showQuizModal = true">+ Add Quiz</button>
       </div>
       <h3>Description: {{ chapter.description }}</h3><br>
@@ -34,8 +34,9 @@ const ChapterAdmin = {
       <div v-if="showQuizModal" class="modal">
         <div class="modal-content">
           <span class="close-btn" @click="closeModal">×</span>
-          <input type="text" v-model="newQuiz.remarks" placeholder="Title">
+         
           <h3>{{ editingQuiz ? 'Edit Quiz' : 'Add Quiz' }}</h3>
+          <input type="text" v-model="newQuiz.remarks" placeholder="Title">
           <input type="date" v-model="newQuiz.date_of_quiz" placeholder="Date of Quiz" required>
           <input type="text" v-model="newQuiz.time_duration" placeholder="Duration (HH:MM)">
        
@@ -128,23 +129,7 @@ const ChapterAdmin = {
       this.$router.push(`/quiz/${quiz_id}`);
     },
 
-    async downloadCSV() {
-      try {
-        const response = await fetch(`/api/chapters/${this.chapter.id}/quiz/csv`);
-        if (!response.ok) throw new Error("Failed to download CSV");
-        
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `Chapter_${this.chapter.id}_Quizzes.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      } catch (error) {
-        console.error("Error downloading CSV:", error);
-      }
-    },
+  
 
     closeModal() {
       this.showQuizModal = false;

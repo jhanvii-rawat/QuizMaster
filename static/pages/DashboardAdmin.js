@@ -1,14 +1,31 @@
 const DashboardAdmin = {
   template: `
   <div class="dashboard">
-    <br>
+    <div class="search-bar">
+      <input 
+        type="text" 
+        v-model="searchQuery" 
+        placeholder="Search chapters..." 
+        @input="searchChapters"
+        class="search-input"
+      >
+      <button @click="searchChapters" class="search-button">
+        <i class="fas fa-search"></i>
+      </button>
+    </div>
+  
     <div class="subjects-header">
       <h2>All Available Subjects</h2>
-      <button class="btn btn-outline-dark" @click="showSubjectModal = true">+ Add Subject</button>
+      <div class="subject-actions">
+        <button class="btn btn-outline-dark" @click="showSubjectModal = true">+ Add Subject</button>
+        <button class="btn btn-outline-info" @click="downloadSubjectsCSV" :disabled="csvLoading">
+          {{ csvLoading ? 'Generating...' : 'Download Subject Data' }}
+        </button>
+      </div>
     </div>
 
     <div class="subject-list">
-      <div v-for="subject in subjects" :key="subject.id" class="subject-card">
+      <div v-for="subject in filteredSubjects" :key="subject.id" class="subject-card">
         <div class="card">
           <div class="card-body">
             <h3 class="card-title">{{ subject.name }}</h3>
@@ -52,18 +69,20 @@ const DashboardAdmin = {
         <button class="btn btn-secondary" @click="showDeleteModal = false">No, Cancel</button>
       </div>
     </div>
-  </div> 
-  `,
+  </div>`,
 
   data() {
     return {
       subjects: [],
+      filteredSubjects: [],
       showSubjectModal: false,
       showDeleteModal: false,
       newSubject: { name: "", description: "" },
       isEditing: false,
       editingSubjectId: null,
       deletingSubjectId: null,
+      searchQuery: "",
+      csvLoading: false,
     };
   },
 
@@ -77,6 +96,8 @@ const DashboardAdmin = {
           ...subject,
           chapter_count: subject.chapters ? subject.chapters.length : 0
         }));
+       
+        this.filteredSubjects = [...this.subjects];
       } catch (error) {
         console.error("Error fetching subjects:", error);
       }
@@ -140,15 +161,64 @@ const DashboardAdmin = {
       }
     },
 
-    resetModal() {
-      this.showSubjectModal = false;
-      this.showDeleteModal = false;
-      this.newSubject = { name: "", description: "" };
-      this.isEditing = false;
-      this.editingSubjectId = null;
-      this.deletingSubjectId = null;
-    }
-  },
+    searchChapters() {
+      if (this.searchQuery.trim() === '') {
+        this.filteredSubjects = [...this.subjects];
+      } else {
+        const query = this.searchQuery.toLowerCase();
+        this.filteredSubjects = this.subjects.filter(subject => 
+          subject.name.toLowerCase().includes(query) || 
+          subject.description.toLowerCase().includes(query)
+        );
+      }
+    },
+
+    async downloadSubjectsCSV() {
+      this.csvLoading = true; // Indicate loading state
+      try {
+        
+       // Prepare CSV data
+       const csvData = [
+         ["ID", "Name", "Description", "Chapter Count"], // Header row
+         ...this.filteredSubjects.map(subject => [
+           subject.id,
+           subject.name,
+           subject.description,
+           subject.chapter_count
+         ])
+       ];
+
+       // Convert array to CSV string
+       const csvString = csvData.map(row => row.join(",")).join("\n");
+
+       // Create a Blob from the CSV string
+       const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+       const url = URL.createObjectURL(blob);
+
+       // Create a link element and trigger download
+       const link = document.createElement('a');
+       link.setAttribute('href', url);
+       link.setAttribute('download', 'subjects.csv');
+       document.body.appendChild(link);
+       link.click(); // Trigger download
+       document.body.removeChild(link); // Clean up
+
+     } catch (error) {
+       console.error("Error downloading CSV:", error);
+     } finally {
+       this.csvLoading = false; // Reset loading state
+     }
+   },
+
+   resetModal() {
+     this.showSubjectModal = false;
+     this.showDeleteModal = false;
+     this.newSubject = { name: "", description: "" };
+     this.isEditing = false;
+     this.editingSubjectId = null;
+     this.deletingSubjectId = null;
+   }
+  }, 
 
   mounted() {
     this.fetchSubjects();

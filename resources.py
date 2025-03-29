@@ -1,16 +1,19 @@
 ## API calls/ CRUD goes from here
 
 from io import StringIO
+import io
 import random
-from flask import Response, jsonify, request
+from flask import Response, jsonify, make_response, request
 from flask_login import current_user, login_required
 from sqlalchemy import func, text
 from sqlalchemy.orm import joinedload
-from extentions import db
+from extentions import db, cache
 from flask_restful import Resource,  Api, fields, marshal_with, reqparse
 from models import Score, Subject, Question, Quiz,  Chapter, User
 from datetime import datetime, time
 import csv
+
+from flask_security import auth_required
 
 api= Api(prefix='/api')
 
@@ -494,6 +497,7 @@ class ScoreListResource(Resource):
         return scores
 
     @marshal_with(score_fields)
+    @auth_required('token')
     def post(self):
         args = request.json
 
@@ -566,10 +570,6 @@ class ReportResource(Resource):
         elif report_type == 'total_in_year_2025':
             return self.get_total_in_year_2025()
 
-        elif report_type == 'download_csv':
-            return self.download_csv_data()
-        elif report_type == 'download_csv_quiz_attempt':
-            return self.download_csv_quiz_attempt()
 
         return {'error': 'Invalid report type'}, 400
 
@@ -675,66 +675,8 @@ class ReportResource(Resource):
         )
         return jsonify({"year": 2025, "total_quizzes": total_quizzes_2025})
     
-    def download_csv_data(self):
-        """Generates a CSV file with Subject, Chapter, and Quiz details"""
-        query = text("""
-            SELECT s.id AS subject_id, s.name AS subject_name, 
-                c.id AS chapter_id, c.name AS chapter_name, 
-                q.id AS quiz_id, q.name AS quiz_name
-            FROM subjects s
-            JOIN chapters c ON s.id = c.subject_id
-            JOIN quizzes q ON c.id = q.chapter_id
-        """)
-
-        data = db.session.execute(query).fetchall()
-
-        # Define headers
-        header = ["Subject ID", "Subject Name", "Chapter ID", "Chapter Name", "Quiz ID", "Quiz Name"]
-
-       
-        output = StringIO()
-        writer = csv.writer(output)
-
-   
-        writer.writerow(header)
-
-
-        for row in data:
-            writer.writerow(row)
-
-
-        output.seek(0)
-        return Response(output, mimetype="text/csv", headers={"Content-Disposition": "attachment; filename=report.csv"})
-
-    def download_csv_quiz_attempt(self):
-        """Generates a CSV file with Quiz Attempt details"""
-        data = db.session.execute("""
-            SELECT qa.attempt_time, q.id AS quiz_id, q.name AS quiz_name, 
-                c.id AS chapter_id, s.id AS subject_id
-            FROM quiz_attempts qa
-            JOIN quizzes q ON qa.quiz_id = q.id
-            JOIN chapters c ON q.chapter_id = c.id
-            JOIN subjects s ON c.subject_id = s.id
-        """).fetchall()
 
     
-        header = ["Attempt Time", "Quiz ID", "Quiz Name", "Chapter ID", "Subject ID"]
-
-      
-        output = StringIO()
-        writer = csv.writer(output)
-
- 
-        writer.writerow(header)
-
-
-        for row in data:
-            writer.writerow(row)
-
-    
-        output.seek(0)
-        return Response(output, mimetype="text/csv", headers={"Content-Disposition": "attachment; filename=quiz_attempts.csv"})
-
 
 
 
@@ -834,11 +776,12 @@ api.add_resource(QuizSubmissionResource, "/quizzes/<int:quiz_id>/submit")
 
 class QuizListResource(Resource):
     @login_required
+    @cache.cached(timeout=300)
     def get(self, chapter_id=None):
         try:
             query = Quiz.query.options(
                 db.joinedload(Quiz.questions),
-                db.joinedload(Quiz.chapter)
+                db.joinedload(Quiz.chapter).joinedload(Chapter.subject)
             )
 
             if chapter_id is not None:
@@ -851,7 +794,6 @@ class QuizListResource(Resource):
             quiz_list = []
 
             for quiz in quizzes:
-                
                 score = Score.query.filter_by(
                     user_id=current_user.id,
                     quiz_id=quiz.id
@@ -860,21 +802,21 @@ class QuizListResource(Resource):
                 quiz_list.append({
                     'id': quiz.id,
                     'chapter_id': quiz.chapter_id,
+                    'chapter_name': quiz.chapter.name if quiz.chapter else "Unknown",
+                    'subject_name': quiz.chapter.subject.name if quiz.chapter and quiz.chapter.subject else "Unknown",
                     'date_of_quiz': quiz.date_of_quiz.strftime('%Y-%m-%d'),
                     'remarks': quiz.remarks,
                     'total_questions': len(quiz.questions),
                     'time_duration': str(quiz.time_duration),
-                    'chapter_name': quiz.chapter.name if quiz.chapter else "Unknown",
-                    'marks': score.total_scored if score else None, 
-                    'retake_quiz': True if score else False,  
-                    'view_answers': True if score else False  
+                    'marks': score.total_scored if score else None,
+                    'retake_quiz': bool(score),
+                    'view_answers': bool(score)
                 })
 
             return jsonify(quiz_list)
 
         except Exception as e:
             return {"error": str(e)}, 500
-
 
 api.add_resource(QuizListResource, '/quizzes', '/quizzes/<int:chapter_id>')
 
@@ -1038,41 +980,56 @@ class ScoreRedirectionResource(Resource):
 api.add_resource(ScoreRedirectionResource, "/score/redirect")
 
 
-
 class AttemptedQuizzesResource(Resource):
     @login_required
     def get(self):
-        # Fetch all scores for the current user
-        scores = Score.query.filter_by(user_id=current_user.id).all()
-      
-    
-       
-        if not scores:
-            return {"success": False, "quizzes": []}, 200 
+        try:
+            # Fetch all scores for the current user with related data
+            results = db.session.query(
+                Score,
+                Quiz,
+                Chapter,
+                Subject
+            ).join(
+                Quiz, Score.quiz_id == Quiz.id
+            ).join(
+                Chapter, Quiz.chapter_id == Chapter.id
+            ).join(
+                Subject, Chapter.subject_id == Subject.id
+            ).filter(
+                Score.user_id == current_user.id
+            ).all()
 
-       
-        scores = Score.query.filter_by(user_id=current_user.id).all()
-        quizzes = []    
-        for score in scores:
-            quiz = Quiz.query.get(score.quiz_id)
-            chapter = Chapter.query.get(quiz.chapter_id)
-            subject = Subject.query.get(chapter.subject_id)
+            if not results:
+                return {
+                    "success": True,
+                    "quizzes": [],
+                    "message": "No attempted quizzes found"
+                }, 200
 
-        quizzes.append({
-            "quiz_id": quiz.id,
-            "title": quiz.remarks,  
-            "chapter": chapter.name,
-            "subject": subject.name,
-            "score": score.total_scored,
-            "time_taken": "N/A",  
-        })
+            quizzes = []
+            for score, quiz, chapter, subject in results:
+                quizzes.append({
+                    "id": quiz.id,
+                    "title": quiz.title if hasattr(quiz, 'title') else quiz.remarks,
+                    "chapter": chapter.name,
+                    "subject": subject.name,
+                    "score": score.total_scored,
+                    "time_taken": score.time_stamp_of_attempt.isoformat() if score.time_stamp_of_attempt else "N/A",
+                })
 
-        return {
-            "success": True,
-            "quizzes": quizzes,
-        }, 200
+            return {
+                "success": True,
+                "quizzes": quizzes,
+            }, 200
 
-api.add_resource(AttemptedQuizzesResource, "/attempted-quizzes")  
+        except Exception as e:
+            return {
+                "success": False,
+                "message": str(e)
+            }, 500
+
+api.add_resource(AttemptedQuizzesResource, "/attempted-quizzes")
 
 
 
@@ -1080,10 +1037,12 @@ api.add_resource(AttemptedQuizzesResource, "/attempted-quizzes")
 class DashboardUserResource(Resource):
     @login_required
     def get(self):
-       
-        scores = Score.query.filter_by(user_id=current_user.id).all()
+        user_id = current_user.id
 
-       
+        # Fetch all scores of the user
+        scores = Score.query.filter_by(user_id=user_id).all()
+
+        # Track chapters progress
         chapters_progress = {}
 
         for score in scores:
@@ -1112,17 +1071,27 @@ class DashboardUserResource(Resource):
                     "progress": progress,
                 })
 
-        
+        # Fetch subjects the user has attempted quizzes in
         continue_subjects = []
-        subjects = Subject.query.join(Chapter).join(Quiz).join(Score).filter(
-            Score.user_id == current_user.id
-        ).distinct().all()
-        
+        subjects = Subject.query.all()
+
         for subject in subjects:
-            continue_subjects.append({
-                "subject_id": subject.id,
-                "subject_name": subject.name
-            })
+            # Get total quizzes in the subject
+            total_quizzes = Quiz.query.join(Chapter).filter(Chapter.subject_id == subject.id).count()
+
+            # Get quizzes the user attempted in this subject
+            attempted_quizzes = Score.query.join(Quiz).join(Chapter).filter(
+                Score.user_id == user_id,
+                Chapter.subject_id == subject.id
+            ).distinct().count()
+
+            if total_quizzes > 0:
+                continue_subjects.append({
+                    "subject_id": subject.id,
+                    "subject_name": subject.name,
+                    "attempted_quizzes": attempted_quizzes,
+                    "total_quizzes": total_quizzes
+                })
 
         return jsonify({
             "success": True,
@@ -1134,8 +1103,10 @@ api.add_resource(DashboardUserResource, "/dashboard-user")
 
 
 
+
 class ExploreSubjectsResource(Resource):
     @login_required
+    @cache.cached(timeout=300)
     def get(self):
         try:
             subjects = Subject.query.all()
@@ -1196,3 +1167,82 @@ class ExploreChaptersResource(Resource):
 api.add_resource(ExploreChaptersResource, '/explore-chapters/<int:subject_id>')
 
 
+
+class SubjectExportResource(Resource):
+    def get(self):
+        # Query all subjects with their chapters and quizzes
+        subjects = Subject.query.options(
+            db.joinedload(Subject.chapters).joinedload(Chapter.quizzes)
+        ).all()
+        
+        # Create in-memory CSV
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Write header
+        writer.writerow(['Subject ID', 'Subject Name', 'Description', 'Chapter Count', 'Quiz Count'])
+        
+        # Write data
+        for subject in subjects:
+            quiz_count = sum(len(chapter.quizzes) for chapter in subject.chapters)
+            writer.writerow([
+                subject.id,
+                subject.name,
+                subject.description,
+                len(subject.chapters),
+                quiz_count
+            ])
+        
+        # Create response
+        response = make_response(output.getvalue())
+        response.headers['Content-Disposition'] = 'attachment; filename=subjects_export.csv'
+        response.headers['Content-type'] = 'text/csv'
+        
+        return response
+
+api.add_resource(SubjectExportResource, '/export/subjects')
+
+
+
+class ExportSubjectsResource(Resource):
+    def get(self):
+        subjects = Subject.query.all()
+
+        # Create CSV response
+        def generate():
+            yield "ID,Name,Description,Chapters Count\n"  # CSV header
+            for subject in subjects:
+                yield f"{subject.id},{subject.name},{subject.description},{len(subject.chapters)}\n"
+
+        response = Response(generate(), content_type="text/csv")
+        response.headers["Content-Disposition"] = "attachment; filename=subjects.csv"
+        return response
+
+# Add to API
+api.add_resource(ExportSubjectsResource, "/export-subjects")
+
+
+
+class QuizRankingsResource(Resource):
+    def get(self, quizId):
+      
+        # Get top 10 scores for this quiz
+        rankings = Score.query.filter_by(quiz_id=quizId)\
+            .order_by(Score.total_scored.desc())\
+            .limit(10)\
+            .all()
+
+        if not rankings:
+            return {"success": True, "rankings": [], "message": "No scores yet for this quiz"}, 200
+
+        result = []
+        for rank, score in enumerate(rankings, 1):
+            user = User.query.get(score.user_id)
+            result.append({
+                "rank": rank,
+                "user_id": user.id,
+                "full_name": user.name,
+                "score": score.total_scored
+            })
+
+        return {"success": True, "rankings": result}, 200

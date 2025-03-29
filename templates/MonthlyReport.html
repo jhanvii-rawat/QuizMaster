@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; }
+        .header { color: #F09A99; }
+        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #F09A99; color: white; }
+        .highlight { background-color: #FFF2F2; padding: 15px; border-radius: 5px; }
+        .button { 
+            background-color: #F09A99; 
+            color: white; 
+            padding: 10px 20px; 
+            text-decoration: none;
+            border-radius: 4px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <h1 class="header">📊 Your Monthly Quiz Report</h1>
+    <p>Hello <strong>{{username}}</strong>,</p>
+    <p>Here's your Monthly activity for <strong>{{month_year}}</strong>:</p>
+    
+    <div class="highlight">
+        <h3>📈 Performance Summary</h3>
+        <p>Quizzes Taken: <strong>{{tota_quizzes}}</strong></p>
+        <p>Top Subject: <strong>{{top_subject}}</strong></p>
+        <p>Best Quiz: <strong>{{best_quiz}} ({{best_score}}%)</strong></p>
+    </div>
+    
+    <p>Keep up the great work! 🚀</p>
+    
+    <footer style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px;">
+        <p>© QuizMaster 2025 | <a href="http://localhost:5000/#/login">Visit Your Dashboard</a></p>
+    </footer>
+</body>
+</html>
