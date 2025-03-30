@@ -78,12 +78,15 @@ celery.autodiscover_tasks
 @celery.on_after_finalize.connect
 def setup_periodic_task(sender, **kwargs):
     sender.add_periodic_task(
+        #monthly- on day 1 at 9 AM
+        #crontab(day_of_month='1', hour='9'),
         crontab('*/10'),
         monthly_report.s(),
     )
 
     sender.add_periodic_task(
-        #crontab(hour=2, minute=59),
+        #daily 10 AM
+        #crontab(hour=10, minute=0),
         crontab('*/1'),
         daily_reminder.s(),
     )

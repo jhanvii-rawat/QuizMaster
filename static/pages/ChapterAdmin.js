@@ -3,11 +3,11 @@ const ChapterAdmin = {
     <div class="dashboard">
       <br>
       <div class="subjects-header">
-        <h2>All Quizzes for Chapter: {{ chapter.name }}</h2>
+        <h2>{{ chapter.name }}</h2=>
        
         <button class="btn btn-outline-dark" @click="showQuizModal = true">+ Add Quiz</button>
       </div>
-      <h3>Description: {{ chapter.description }}</h3><br>
+      <br>
       <div class="chapter-list">
         <div v-if="quizzes.length > 0">
           <div v-for="quiz in quizzes" :key="quiz.id" class="chapter-card">

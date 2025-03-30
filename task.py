@@ -34,43 +34,41 @@ def monthly_report():
         user_data["username"] = user.name
         user_data["email"] = user.email
 
-        # Fetch all scores for this user
+        
         user_scores = Score.query.filter_by(user_id=user.id).all()
         #print("User Scores:", user_scores)  ## debug steps
         
-        subject_scores = {}  # To track scores per subject
+        subject_scores = {}  
         best_quiz = None
         best_score = 0
 
         for score in user_scores:
-            quiz = Quiz.query.get(score.quiz_id)  # Get the quiz related to this score
-            subject = quiz.chapter.subject.name  # Get subject name from quiz -> chapter -> subject
-
-            # Track highest-scoring quiz
+            quiz = Quiz.query.get(score.quiz_id) 
+            subject = quiz.chapter.subject.name  
+            
             if score.total_scored > best_score:
                 best_score = score.total_scored
-                best_quiz = quiz.remarks  # Assuming "remarks" stores the quiz name
-
-            # Track subject performance
+                best_quiz = quiz.remarks 
+          
             if subject not in subject_scores:
                 subject_scores[subject] = []
             subject_scores[subject].append(score.total_scored)
 
-        # Calculate total quizzes taken
+        
         user_data["tota_quizzes"] = len(user_scores)
 
-        # Find top subject (highest avg score)
+       
         if subject_scores:
             top_subject = max(subject_scores, key=lambda s: sum(subject_scores[s]) / len(subject_scores[s]))
         else:
             top_subject = "N/A"
 
-        # Populate user data
+       
         user_data["top_subject"] = top_subject
         user_data["best_quiz"] = best_quiz if best_quiz else "N/A"
         user_data["best_score"] = best_score if best_quiz else "N/A"
 
-        # Format the message and send email
+       
         #print("User Data:", user_data)   ## debugging steps
         message = format_report("templates/MonthlyReport.html", user_data)
         #print("###  Message ##", message)  ## debuggingsteps
@@ -96,7 +94,6 @@ def daily_reminder():
         }
        # print(f"Processing user: {user.email}")
 
-        # ✅ Ensure this is inside the loop
         message = format_report("templates/DailyReminder.html", user_data)
         #print("### Message ##", message)  # Debugging
         send_email(user.email, subject="Daily Learning Reminder", message=message)
@@ -109,3 +106,4 @@ def daily_reminder():
 
      ##celery -A app:celery_app worker -l INFO
      ##celery -A app:celery_app beat -l INFO
+     ##~/go/bin/MailHog

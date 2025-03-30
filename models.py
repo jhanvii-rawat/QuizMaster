@@ -28,36 +28,57 @@ class UserRoles(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
-
 # Subject model
 class Subject(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), nullable=False, unique=True)
     description = db.Column(db.String(80))
-    chapters = db.relationship('Chapter', backref='subject', lazy=True)
+    chapters = db.relationship('Chapter', 
+                             backref='subject', 
+                             lazy=True,
+                             cascade='all, delete-orphan',
+                             passive_deletes=True)
 
 # Chapter model
 class Chapter(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.String(100))
-    subject_id = db.Column(db.Integer, db.ForeignKey('subject.id'), nullable=False)
-    quizzes = db.relationship('Quiz', backref='chapter', lazy=True)
+    subject_id = db.Column(db.Integer, 
+                         db.ForeignKey('subject.id', ondelete='CASCADE'),
+                         nullable=False)
+    quizzes = db.relationship('Quiz', 
+                            backref='chapter', 
+                            lazy=True,
+                            cascade='all, delete-orphan',
+                            passive_deletes=True)
 
 
 class Quiz(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    chapter_id = db.Column(db.Integer, db.ForeignKey('chapter.id'), nullable=False)
+    chapter_id = db.Column(db.Integer, 
+                         db.ForeignKey('chapter.id', ondelete='CASCADE'),
+                         nullable=False)
     date_of_quiz = db.Column(db.Date, nullable=False)
     time_duration = db.Column(db.Time, nullable=False)  
     remarks = db.Column(db.String(100))
-    questions = db.relationship('Question', backref='quiz', lazy=True)
-    scores = db.relationship('Score', backref='quiz', lazy=True)
+    questions = db.relationship('Question', 
+                              backref='quiz', 
+                              lazy=True,
+                              cascade='all, delete-orphan',
+                              passive_deletes=True)
+    scores = db.relationship('Score', 
+                           backref='quiz', 
+                           lazy=True,
+                           cascade='all, delete-orphan',
+                           passive_deletes=True)
 
 # Question model
 class Question(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    quiz_id = db.Column(db.Integer, db.ForeignKey('quiz.id'), nullable=False)
+    quiz_id = db.Column(db.Integer, 
+                      db.ForeignKey('quiz.id', ondelete='CASCADE'),
+                      nullable=False)
     question_statement = db.Column(db.String(500), nullable=False)
     option1 = db.Column(db.String(255), nullable=False)
     option2 = db.Column(db.String(255), nullable=False)
@@ -68,8 +89,11 @@ class Question(db.Model):
 # Score model
 class Score(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    quiz_id = db.Column(db.Integer, db.ForeignKey('quiz.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    quiz_id = db.Column(db.Integer, 
+                      db.ForeignKey('quiz.id', ondelete='CASCADE'),
+                      nullable=False)
+    user_id = db.Column(db.Integer, 
+                      db.ForeignKey('user.id', ondelete='CASCADE'),
+                      nullable=False)
     time_stamp_of_attempt = db.Column(db.DateTime, nullable=False)
     total_scored = db.Column(db.Float, nullable=False)
-

@@ -5,10 +5,10 @@ const SubjectAdmin = {
   <div class="dashboard">
     <br>
     <div class="subjects-header">
-      <h2> All Available Chapters of Subject: {{ subject.name }}</h2>
+      <h2 >All Subjects / {{ subject.name }} </h2>
       <button class="btn btn-outline-dark" @click="showChapterModal = true">+ Add Chapter</button>
     </div>
-    <h2> Description: {{ subject.description }}</h2><br>
+   
     <div class="subject-list">    
       <div v-if="chapters.length > 0">
         <div v-for="chapter in chapters" :key="chapter.id" class="chapter-card">
