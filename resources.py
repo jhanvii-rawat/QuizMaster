@@ -5,7 +5,7 @@ import io
 import random
 from flask import Response, jsonify, make_response, request
 from flask_login import current_user, login_required
-from sqlalchemy import func, text
+from sqlalchemy import distinct, func, text
 from sqlalchemy.orm import joinedload
 from extentions import db, cache
 from flask_restful import Resource,  Api, fields, marshal_with, reqparse
@@ -412,7 +412,6 @@ class SubjectListResource(Resource):
 
 #######################################
 
-
 # Score Parser
 score_parser = reqparse.RequestParser()
 score_parser.add_argument('quiz_id', type=int, required=True, help="Quiz ID is required")
@@ -420,7 +419,14 @@ score_parser.add_argument('user_id', type=int, required=True, help="User ID is r
 score_parser.add_argument('time_stamp_of_attempt', type=str, required=True, help="Timestamp is required")
 score_parser.add_argument('total_scored', type=float, required=True, help="Total scored is required")
 
-# Score fields
+# Function to handle timestamp conversion
+def parse_timestamp(timestamp_str):
+    try:
+        return datetime.fromisoformat(timestamp_str.replace("Z", ""))
+    except ValueError:
+        return None
+
+# Score fields for response marshalling
 score_fields = {
     'id': fields.Integer,
     'quiz_id': fields.Integer,
@@ -463,32 +469,29 @@ class ScoreResource(Resource):
             return jsonify({"message": "Quiz not found"}), 404
 
         user_answers = args.get("answers", {})
-
-       
         if not user_answers:
             return jsonify({"message": "No answers provided"}), 400
 
-        total_score = 0
-        for question in quiz.questions:
-            selected_answer = user_answers.get(str(question.id), "").strip().lower()
-            correct_answer = question.correct_option.strip().lower()
-            if selected_answer == correct_answer:
-                total_score += 1
+        # Validate number of questions to avoid division by zero
+        total_questions = len(quiz.questions)
+        if total_questions == 0:
+            return jsonify({"message": "Quiz has no questions"}), 400
 
-        total_scored = (total_score / len(quiz.questions)) * 100
-        score.total_scored = total_scored
+        total_score = sum(
+            1 for question in quiz.questions
+            if user_answers.get(str(question.id), "").strip().lower() == question.correct_option.strip().lower()
+        )
+
+        score.total_scored = (total_score / total_questions) * 100
 
         if "time_stamp_of_attempt" in args:
-            try:
-                score.time_stamp_of_attempt = datetime.fromisoformat(args["time_stamp_of_attempt"].replace("Z", ""))
-            except ValueError:
+            parsed_time = parse_timestamp(args["time_stamp_of_attempt"])
+            if parsed_time is None:
                 return jsonify({"message": "Invalid timestamp format"}), 400
+            score.time_stamp_of_attempt = parsed_time
 
         db.session.commit()
-        return jsonify({"message": "Score updated", "total_scored": total_scored}), 200
-
-
-
+        return jsonify({"message": "Score updated", "total_scored": score.total_scored}), 200
 
 class ScoreListResource(Resource):
     @marshal_with(score_fields)
@@ -497,34 +500,40 @@ class ScoreListResource(Resource):
         return scores
 
     @marshal_with(score_fields)
-    @auth_required('token')
     def post(self):
         args = request.json
 
-        # Validate fields
         quiz_id = args.get('quiz_id')
         user_id = args.get('user_id')
-        time_stamp_of_attempt = args.get('time_stamp_of_attempt').strip()
+        time_stamp_of_attempt = args.get('time_stamp_of_attempt', "").strip()
         total_scored = args.get('total_scored')
 
         if not quiz_id or not user_id or not time_stamp_of_attempt or total_scored is None:
             return {"message": "All fields are required"}, 400  
 
+        # Validate timestamp
+        parsed_time = parse_timestamp(time_stamp_of_attempt)
+        if parsed_time is None:
+            return {"message": "Invalid timestamp format"}, 400
+
+        # Check if the user has already submitted a score for the quiz
+        existing_score = Score.query.filter_by(quiz_id=quiz_id, user_id=user_id).first()
+        if existing_score:
+            return {"message": "User has already submitted a score for this quiz"}, 400  
+
         new_score = Score(
-        quiz_id=args["quiz_id"],
-        user_id=args["user_id"],
-        time_stamp_of_attempt=args["time_stamp_of_attempt"].strip(),
-        total_scored=args["total_scored"]
-    )
+            quiz_id=quiz_id,
+            user_id=user_id,
+            time_stamp_of_attempt=parsed_time,
+            total_scored=total_scored
+        )
         db.session.add(new_score)
         db.session.commit()
 
-
         return new_score, 201  # Created
 
-
-api.add_resource(ScoreListResource, "/scores")  # list of score
-api.add_resource(ScoreResource, "/scores/<int:score_id>") 
+api.add_resource(ScoreListResource, "/scores")  
+api.add_resource(ScoreResource, "/scores/<int:score_id>")
 
 
 #################### API END POINTS #########################
@@ -776,7 +785,7 @@ api.add_resource(QuizSubmissionResource, "/quizzes/<int:quiz_id>/submit")
 
 class QuizListResource(Resource):
     @login_required
-    @cache.cached(timeout=300)
+   
     def get(self, chapter_id=None):
         try:
             query = Quiz.query.options(
@@ -809,6 +818,7 @@ class QuizListResource(Resource):
                     'total_questions': len(quiz.questions),
                     'time_duration': str(quiz.time_duration),
                     'marks': score.total_scored if score else None,
+                    'score_id' : score.id if score else None,
                     'retake_quiz': bool(score),
                     'view_answers': bool(score)
                 })
@@ -1033,59 +1043,72 @@ api.add_resource(AttemptedQuizzesResource, "/attempted-quizzes")
 
 
 
-
 class DashboardUserResource(Resource):
     @login_required
     def get(self):
         user_id = current_user.id
+        print(f"Dashboard accessed by user ID: {user_id}")
 
-        # Fetch all scores of the user
-        scores = Score.query.filter_by(user_id=user_id).all()
+        # Get all unique chapters the user has attempted quizzes in
+        attempted_chapters = db.session.query(
+            Chapter.id,
+            Chapter.name.label('chapter_name'),
+            Subject.name.label('subject_name'),
+            Subject.id.label('subject_id'),
+            func.count(distinct(Quiz.id)).label('total_quizzes'),
+            func.count(distinct(Score.quiz_id)).label('attempted_quizzes')
+        ).join(
+            Quiz, Chapter.id == Quiz.chapter_id
+        ).join(
+            Score, Quiz.id == Score.quiz_id
+        ).join(
+            Subject, Chapter.subject_id == Subject.id
+        ).filter(
+            Score.user_id == user_id
+        ).group_by(
+            Chapter.id, Chapter.name, Subject.name, Subject.id
+        ).all()
 
-        # Track chapters progress
-        chapters_progress = {}
-
-        for score in scores:
-            quiz = Quiz.query.get(score.quiz_id)
-            chapter = Chapter.query.get(quiz.chapter_id)
-            subject = Subject.query.get(chapter.subject_id)
-
-            # Update chapter progress
-            if chapter.id not in chapters_progress:
-                chapters_progress[chapter.id] = {
-                    "chapter_name": chapter.name,
-                    "subject_name": subject.name,
-                    "total_quizzes": Quiz.query.filter_by(chapter_id=chapter.id).count(),
-                    "attempted_quizzes": 0,
-                }
-            chapters_progress[chapter.id]["attempted_quizzes"] += 1
-
+        # Prepare continue_chapters with progress
         continue_chapters = []
-        for chapter_id, data in chapters_progress.items():
-            if data["attempted_quizzes"] < data["total_quizzes"]:
-                progress = (data["attempted_quizzes"] / data["total_quizzes"]) * 100
+        for chapter in attempted_chapters:
+            # Get all quizzes in this chapter
+            total_quizzes = Quiz.query.filter_by(chapter_id=chapter.id).count()
+            
+            # Get quizzes attempted by user in this chapter
+            attempted_quizzes = Score.query.join(Quiz).filter(
+                Score.user_id == user_id,
+                Quiz.chapter_id == chapter.id
+            ).distinct(Score.quiz_id).count()
+
+            if attempted_quizzes < total_quizzes:
+                progress = (attempted_quizzes / total_quizzes) * 100
                 continue_chapters.append({
-                    "chapter_id": chapter_id,
-                    "chapter_name": data["chapter_name"],
-                    "subject_name": data["subject_name"],
-                    "progress": progress,
+                    "chapter_id": chapter.id,
+                    "chapter_name": chapter.chapter_name,
+                    "subject_name": chapter.subject_name,
+                    "progress": round(progress, 2)
                 })
 
-        # Fetch subjects the user has attempted quizzes in
+        # Get unique subjects from attempted chapters
         continue_subjects = []
-        subjects = Subject.query.all()
+        if attempted_chapters:
+            # Get distinct subject IDs from attempted chapters
+            subject_ids = {chapter.subject_id for chapter in attempted_chapters}
+            
+            # Get subjects with progress data
+            subjects = Subject.query.filter(Subject.id.in_(subject_ids)).all()
+            for subject in subjects:
+                # Calculate subject progress
+                total_quizzes = Quiz.query.join(Chapter).filter(
+                    Chapter.subject_id == subject.id
+                ).count()
+                
+                attempted_quizzes = Score.query.join(Quiz).join(Chapter).filter(
+                    Score.user_id == user_id,
+                    Chapter.subject_id == subject.id
+                ).distinct(Score.quiz_id).count()
 
-        for subject in subjects:
-            # Get total quizzes in the subject
-            total_quizzes = Quiz.query.join(Chapter).filter(Chapter.subject_id == subject.id).count()
-
-            # Get quizzes the user attempted in this subject
-            attempted_quizzes = Score.query.join(Quiz).join(Chapter).filter(
-                Score.user_id == user_id,
-                Chapter.subject_id == subject.id
-            ).distinct().count()
-
-            if total_quizzes > 0:
                 continue_subjects.append({
                     "subject_id": subject.id,
                     "subject_name": subject.name,
@@ -1093,11 +1116,11 @@ class DashboardUserResource(Resource):
                     "total_quizzes": total_quizzes
                 })
 
-        return jsonify({
+        return {
             "success": True,
             "continue_chapters": continue_chapters,
             "continue_subjects": continue_subjects,
-        })
+        }
 
 api.add_resource(DashboardUserResource, "/dashboard-user")
 
@@ -1106,7 +1129,7 @@ api.add_resource(DashboardUserResource, "/dashboard-user")
 
 class ExploreSubjectsResource(Resource):
     @login_required
-    @cache.cached(timeout=300)
+   
     def get(self):
         try:
             subjects = Subject.query.all()
@@ -1246,3 +1269,32 @@ class QuizRankingsResource(Resource):
             })
 
         return {"success": True, "rankings": result}, 200
+
+
+
+class QuizAttemptStatus(Resource):
+    @login_required
+    def get(self, quiz_id):
+        current_user = current_user.id
+        # Check if user already attempted this quiz
+        existing_score = Score.query.filter_by(
+            user_id=current_user,
+            quiz_id=quiz_id
+        ).first()
+        
+        if existing_score:
+            return {
+                'previously_attempted': True,
+                'score_id': existing_score.id,
+                'previous_answers': [
+                    {
+                        'question_id': a.question_id,
+                        'selected_option': a.selected_option
+                    }
+                    for a in existing_score.answers
+                ]
+            }
+        return {'previously_attempted': False}
+
+api.add_resource(QuizAttemptStatus, '/api/quiz/<int:quiz_id>/attempt-status')
+

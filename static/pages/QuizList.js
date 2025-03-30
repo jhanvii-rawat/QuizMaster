@@ -61,10 +61,10 @@ const QuizList = {
               </button>
               
               <div v-if="quiz.retake_quiz" class="attempted-actions">
-                <button class="btn btn-outline-warning"
-                        @click="reattemptQuiz(quiz.id)">
-                  Retake Quiz
-                </button>
+              <button class="btn btn-outline-warning"
+              @click="reattemptQuiz(quiz.id, quiz.score_id)">
+        Retake Quiz
+      </button>
                 <button class="btn btn-outline-info"
                         @click="viewAnswers(quiz.id)">
                   View Answers
@@ -125,8 +125,8 @@ const QuizList = {
       this.$router.push(`/quiz/${quizId}/attempt`);
     },
     
-    reattemptQuiz(quizId) {
-      this.$router.push(`/quiz/${quizId}/reattempt`);
+    reattemptQuiz(quizId, scoreId) {
+      this.$router.push(`/quiz/${quizId}/reattempt/${scoreId}`);
     },
     
     viewAnswers(quizId) {

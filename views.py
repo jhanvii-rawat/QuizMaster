@@ -64,7 +64,13 @@ def create_view(app : Flask, user_datastore : SQLAlchemySessionUserDatastore, db
             return jsonify({'message' : 'invalid user'}), 404
         
         if verify_password(password, user.password):
-            return jsonify({'token' : user.get_auth_token(), 'role' : user.roles[0].name, 'id' : user.id, 'email' : user.email }), 200
+            return jsonify({
+        "success": True,
+        "user_id": user.id,
+        "role": user.role,  # 'admin' or 'user'
+       
+        "message": "Login successful"
+    }), 200
         else:
             return jsonify({'message' : 'wrong password'})
         

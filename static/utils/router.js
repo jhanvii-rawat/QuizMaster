@@ -48,7 +48,7 @@ const routes = [
 
 
   
-  { path: "/quiz/:quiz_id/reattempt/", name: "ReattemptQuiz", component: ReattemptQuiz, meta : {requiresLogin : true, role : "user"} },
+  { path: "/quiz/:quiz_id/reattempt/:score_id", name: "ReattemptQuiz", component: ReattemptQuiz, meta : {requiresLogin : true, role : "user"} },
   { path: "/attempted-quizzes", name: "AttemptedQuizzesList", component: AttemptedQuizzesList, meta : {requiresLogin : true, role : "user"} },
   { path: "/dashboard-user", name: "DashboardUser", component: DashboardUser, meta : {requiresLogin : true, role : "user"} },
   { path: "/explore-subjects", component: ExploreSubjects, meta : {requiresLogin : true, role : "user"}},

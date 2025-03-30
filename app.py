@@ -80,7 +80,7 @@ def setup_periodic_task(sender, **kwargs):
     sender.add_periodic_task(
         #monthly- on day 1 at 9 AM
         #crontab(day_of_month='1', hour='9'),
-        crontab('*/10'),
+        crontab('*/1'),
         monthly_report.s(),
     )
 

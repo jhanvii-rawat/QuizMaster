@@ -108,15 +108,27 @@ const ReportsAdmin = {
         .then(response => response.json())
         .then(data => {
           const ctx = document.getElementById("registeredUsersChart").getContext("2d");
+          
+          // Convert string counts to numbers
+          const counts = data.map(d => Number(d.count));
+          
+          // Calculate max value for y-axis with some padding
+          const maxCount = Math.max(...counts);
+          const suggestedMax = maxCount + (maxCount * 0.2); // 20% padding
     
-          new Chart(ctx, {
+          // Destroy previous chart instance if exists
+          if (this.registeredUsersChartInstance) {
+            this.registeredUsersChartInstance.destroy();
+          }
+    
+          this.registeredUsersChartInstance = new Chart(ctx, {
             type: "line",
             data: {
-              labels: data.map(d => `${d.month} 2025`),
+              labels: data.map(d => `${d.month}/2025`), // Format as MM/YYYY
               datasets: [
                 {
                   label: "Registered Users",
-                  data: data.map(d => d.count),
+                  data: counts,
                   borderColor: "#F3B4B4",
                   fill: true,
                   backgroundColor: "rgba(243, 180, 180, 0.2)"
@@ -129,13 +141,21 @@ const ReportsAdmin = {
                 legend: { display: false }
               },
               scales: {
-                x: { title: { display: true, text: "Months" } },
+                x: { 
+                  title: { display: true, text: "Months" },
+                  grid: { display: false }
+                },
                 y: { 
                   title: { display: true, text: "User Count" }, 
                   beginAtZero: true,
+                  suggestedMax: suggestedMax,
                   ticks: {
+                    stepSize: 1, // Ensure whole number steps
+                    precision: 0, // No decimal places
                     callback: function(value) {
-                      return Math.round(value); // Ensure whole numbers
+                      if (value % 1 === 0) { // Only show whole numbers
+                        return value;
+                      }
                     }
                   }
                 }
@@ -254,8 +274,8 @@ const ReportsAdmin = {
                     text: 'Number of Quizzes'
                   },
                   ticks: {
-                    stepSize: 1, // Ensure X-axis ticks are whole numbers
-                    precision: 0  // Disable decimal places
+                    stepSize: 1, 
+                    precision: 0 
                   }
                 },
                 y: {
@@ -264,8 +284,8 @@ const ReportsAdmin = {
                     text: 'Number of Chapters'
                   },
                   ticks: {
-                    stepSize: 1, // Ensure Y-axis ticks are whole numbers
-                    precision: 0  // Disable decimal places
+                    stepSize: 1, 
+                    precision: 0  
                   }
                 }
               },

@@ -104,6 +104,8 @@ def daily_reminder():
 
 
 
+#### below are the terminal commands i have saved for instant copy paste
+
      ##celery -A app:celery_app worker -l INFO
      ##celery -A app:celery_app beat -l INFO
      ##~/go/bin/MailHog
